@@ -66,7 +66,8 @@ export default {
       },
 
       status: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        defaultValue: "Available"
       },
 
       good_with_kids: {

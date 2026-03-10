@@ -1,6 +1,7 @@
 import db from "../../models/index.js";
 
-const Pet = db.Pet;
+const { Pet, Shelter, Sequelize } = db;
+const { Op } = Sequelize;
 
 /*
 CREATE PET
@@ -166,6 +167,99 @@ export const deletePet = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Failed to delete pet"
+    });
+  }
+};
+export const browsePets = async (req, res) => {
+  try {
+
+    const {
+      species,
+      breed,
+      gender,
+      vaccinated,
+      special_needs,
+      good_with_kids,
+      age_min,
+      age_max,
+      zipcode,
+      city,
+      page = 1,
+      limit = 9,
+      sort = "newest"
+    } = req.query;
+
+    const where = {
+      deleted_at: null,
+      status: "Available"
+    };
+
+    // PET FILTERS
+
+    if (species) where.species = species;
+
+    if (breed) where.breed = breed;
+
+    if (gender) where.gender = gender;
+
+    if (vaccinated !== undefined) where.vaccinated = vaccinated === "true";
+
+    if (special_needs !== undefined) where.special_needs = special_needs === "true";
+
+    if (good_with_kids !== undefined) where.good_with_kids = good_with_kids === "true";
+
+    if (age_min || age_max) {
+      where.age = {};
+      if (age_min) where.age[Op.gte] = age_min;
+      if (age_max) where.age[Op.lte] = age_max;
+    }
+
+    // SHELTER LOCATION FILTER
+
+    const shelterFilter = {};
+
+    if (zipcode) shelterFilter.zipcode = zipcode;
+
+    if (city) shelterFilter.city = city;
+
+    // PAGINATION
+
+    const offset = (page - 1) * limit;
+
+    // SORTING
+
+    let order = [["listed_at", "DESC"]];
+
+    if (sort === "oldest") {
+      order = [["listed_at", "ASC"]];
+    }
+
+    const pets = await Pet.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Shelter,
+          as: "shelter",
+          attributes: ["name", "city", "state", "zipcode"],
+          where: Object.keys(shelterFilter).length ? shelterFilter : undefined
+        }
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order
+    });
+
+    return res.status(200).json({
+      total: pets.count,
+      page: Number(page),
+      totalPages: Math.ceil(pets.count / limit),
+      pets: pets.rows
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to browse pets",
+      details: error.message
     });
   }
 };

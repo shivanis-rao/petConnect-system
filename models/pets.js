@@ -1,11 +1,19 @@
 import { Model, DataTypes } from "sequelize";
 
 export default (sequelize) => {
+
   class Pet extends Model {
+
     static associate(models) {
-      // example future relation
-      // Pet.belongsTo(models.User, { foreignKey: "shelter_id" });
+
+      // Pet belongs to a shelter
+      Pet.belongsTo(models.Shelter, {
+        foreignKey: "shelter_id",
+        as: "shelter"
+      });
+
     }
+
   }
 
   Pet.init(

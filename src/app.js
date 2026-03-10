@@ -11,5 +11,7 @@ app.use(express.json());
 
 app.use("/api/users", userRoutes);
 app.use("/api/shelter/pets", petRoutes);
+// public browse
+app.use("/api/pets", petRoutes);
 
 export  default app;
