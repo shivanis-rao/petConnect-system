@@ -12,19 +12,16 @@ import {
 
 const router = express.Router();
 
-router.post("/", createPet);
-
-router.get("/", getAllPets);
-
-/* BROWSE ROUTE MUST COME BEFORE :id */
+/* PUBLIC BROWSE */
 router.get("/browse", browsePets);
 
+/* SHELTER PET MANAGEMENT */
+router.post("/", createPet);
+router.get("/", getAllPets);
+
 router.get("/:id", getPetById);
-
 router.put("/:id", updatePet);
-
 router.patch("/:id/status", updatePetStatus);
-
 router.delete("/:id", deletePet);
 
 export default router;

@@ -4,7 +4,7 @@
 
 export default {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Pets', {
+    await queryInterface.createTable('pets', {
       id: {
         allowNull: false,
         type: Sequelize.INTEGER,
@@ -112,6 +112,6 @@ export default {
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('Pets');
+    await queryInterface.dropTable('pets');
   }
 };
