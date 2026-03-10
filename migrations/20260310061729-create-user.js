@@ -29,7 +29,7 @@ export default {
       },
 
       phone: {
-        type: Sequelize.STRING(20),
+        type: Sequelize.INTEGER,
         allowNull: true,
         unique: true
       },
