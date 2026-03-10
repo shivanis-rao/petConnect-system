@@ -236,14 +236,15 @@ export const browsePets = async (req, res) => {
 
     const pets = await Pet.findAndCountAll({
       where,
-      include: [
-        {
-          model: Shelter,
-          as: "shelter",
-          attributes: ["name", "city", "state", "zipcode"],
-          where: Object.keys(shelterFilter).length ? shelterFilter : undefined
-        }
-      ],
+     include: [
+  {
+    model: Shelter,
+    as: "shelter",
+    attributes: ["name", "city", "state", "zipcode"],
+    where: Object.keys(shelterFilter).length ? shelterFilter : undefined,
+    required: false
+  }
+],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order
