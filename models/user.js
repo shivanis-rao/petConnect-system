@@ -85,6 +85,12 @@ export default (sequelize) => {
       updatedAt: "updated_at"
     }
   );
+  User.associate = (models) => {
+    User.hasOne(models.Shelter, {
+      foreignKey: "owner_id",
+      as: "shelter",
+    });
+  };
 
   return User;
 };
