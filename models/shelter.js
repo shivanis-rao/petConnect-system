@@ -99,17 +99,23 @@ export default (sequelize, DataTypes) => {
       underscored: true,
     },
   );
-  Shelter.associate = (models) => {
-    Shelter.belongsTo(models.User, {
-      foreignKey: "owner_id",
-      as: "owner",
-    });
+ Shelter.associate = (models) => {
 
-    Shelter.belongsTo(models.User, {
-      foreignKey: "approved_by",
-      as: "approvedAdmin",
-    });
-  };
+  Shelter.belongsTo(models.User, {
+    foreignKey: "owner_id",
+    as: "owner",
+  });
 
+  Shelter.belongsTo(models.User, {
+    foreignKey: "approved_by",
+    as: "approvedAdmin",
+  });
+
+  Shelter.hasMany(models.Pet, {
+    foreignKey: "shelter_id",
+    as: "pets",
+  });
+
+};
   return Shelter;
 };
