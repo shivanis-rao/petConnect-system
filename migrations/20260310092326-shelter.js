@@ -30,7 +30,7 @@ export default {
         allowNull: false,
         unique: true,
         references: {
-          model: "Users",
+          model: "users",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -40,7 +40,7 @@ export default {
       approved_by: {
         type: Sequelize.INTEGER,
         references: {
-          model: "Users",
+          model: "users",
           key: "id",
         },
         onUpdate: "CASCADE",
