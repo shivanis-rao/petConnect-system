@@ -1,19 +1,13 @@
-import { Model, DataTypes } from "sequelize";
+import { Model } from "sequelize";
 
-export default (sequelize) => {
-
+export default (sequelize, DataTypes) => {
   class Pet extends Model {
-
     static associate(models) {
-
-      // Pet belongs to a shelter
       Pet.belongsTo(models.Shelter, {
         foreignKey: "shelter_id",
-        as: "shelter"
+        as: "shelter",
       });
-
     }
-
   }
 
   Pet.init(
@@ -58,7 +52,7 @@ export default (sequelize) => {
     {
       sequelize,
       modelName: "Pet",
-      tableName: "Pets",
+      tableName: "pets",
       timestamps: true,
     }
   );

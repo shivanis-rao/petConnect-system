@@ -1,6 +1,6 @@
 import { Model, DataTypes } from "sequelize";
 
-export default (sequelize) => {
+export default (sequelize,DataTypes) => {
   class User extends Model {
     static associate(models) {}
   }
@@ -91,10 +91,7 @@ export default (sequelize) => {
       as: "shelter",
     });
 
-    User.hasMany(models.ShelterFiles, {
-      foreignKey: "verified_by",
-      as: "verified_files",
-    });
+    
   };
 
   return User;

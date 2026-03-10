@@ -44,6 +44,7 @@ const modelFiles = fs
   );
 
 for (const file of modelFiles) {
+  console.log("Loading model:", file);
   const modelModule = await import(path.join(__dirname, file));
   const model = modelModule.default(sequelize, Sequelize.DataTypes);
   db[model.name] = model;
