@@ -18,9 +18,15 @@ export default (sequelize) => {
       sequelize,
       modelName: "User",
       tableName: "Users", // optional
-      timestamps: true,   // optional
-    }
+      timestamps: true, // optional
+    },
   );
+  User.associate = (models) => {
+    User.hasOne(models.Shelter, {
+      foreignKey: "owner_id",
+      as: "shelter",
+    });
+  };
 
   return User;
 };
