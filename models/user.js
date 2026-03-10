@@ -90,6 +90,11 @@ export default (sequelize) => {
       foreignKey: "owner_id",
       as: "shelter",
     });
+
+    User.hasMany(models.ShelterFiles, {
+      foreignKey: "verified_by",
+      as: "verified_files",
+    });
   };
 
   return User;
