@@ -1,37 +1,36 @@
 // models/index.js
-import fs from "fs";
-import path from "path";
 import Sequelize from "sequelize";
-import process from "process";
+import dotenv from "dotenv";
+import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
-// Convert ES module meta to __dirname / __filename
+// Load .env variables
+dotenv.config();
+
+// Convert ES module meta to __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Get environment
-const env = process.env.NODE_ENV || "development";
-
-// Load config JSON using fs + JSON.parse (avoids import assertion issues)
-const configPath = path.join(__dirname, "../config/config.json");
-const configJSON = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-const config = configJSON[env];
-
 const db = {};
 
-let sequelize;
+// Determine environment
+const env = process.env.NODE_ENV || "development";
+
+// Build config from env variables
+const config = {
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  host: process.env.DB_HOST,
+  dialect: process.env.DB_DIALECT || "postgres",
+};
 
 // Initialize Sequelize
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-  sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
-    config
-  );
-}
+const sequelize = new Sequelize(config.database, config.username, config.password, {
+  host: config.host,
+  dialect: config.dialect,
+});
 
 // Dynamically import models
 const modelFiles = fs
@@ -57,7 +56,7 @@ for (const modelName of Object.keys(db)) {
   }
 }
 
-// Export
+// Export db object
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
