@@ -1,7 +1,8 @@
-const { User } = require("../../models");
+import db from "../../models/index.js";
 
-exports.createUser = async (req, res) => {
+const { User } = db;
 
+export const createUser = async (req, res) => {
   try {
 
     const user = await User.create({
@@ -14,5 +15,4 @@ exports.createUser = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-
 };
