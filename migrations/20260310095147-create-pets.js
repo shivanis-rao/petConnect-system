@@ -6,6 +6,7 @@ export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Pets', {
       id: {
+        allowNull: false,
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true
@@ -13,10 +14,12 @@ export default {
 
       name: {
         type: Sequelize.STRING
+
       },
 
       species: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        comment: "dog|cat"
       },
 
       breed: {
@@ -28,7 +31,8 @@ export default {
       },
 
       gender: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        comment: "male|female"
       },
 
       vaccinated: {
