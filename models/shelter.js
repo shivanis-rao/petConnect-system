@@ -109,6 +109,15 @@ export default (sequelize, DataTypes) => {
       foreignKey: "approved_by",
       as: "approvedAdmin",
     });
+    Shelter.hasOne(models.ShelterNgoDetails, {
+      foreignKey: "shelter_id",
+      as: "ngo_details",
+    });
+
+    Shelter.hasMany(models.ShelterFiles, {
+      foreignKey: "shelter_id",
+      as: "files",
+    });
   };
 
   return Shelter;
