@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import db from "../../models/index.js";
+
 const { User, Shelter } = db;
 
 export const authMiddleware = async (req, res, next) => {
@@ -28,39 +29,30 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // Attach basic user info to req.user
+    // Attach basic user info
     req.user = {
       id: user.id,
       email: user.email,
       role: user.role
     };
 
-    // If user is a shelter, attach shelter info
+    // Attach shelter info if role is shelter
     if (user.role === "shelter") {
       const shelter = await Shelter.findOne({ where: { owner_id: user.id } });
-      req.user.shelter = shelter ? { id: shelter.id, name: shelter.name } : null;
+      req.user.shelter = shelter
+        ? { id: shelter.id, name: shelter.name }
+        : null;
     }
 
     next();
   } catch (error) {
-    // Detailed error handling
     if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        success: false,
-        message: "Token expired"
-      });
+      return res.status(401).json({ success: false, message: "Token expired" });
     }
-
     if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token"
-      });
+      return res.status(401).json({ success: false, message: "Invalid token" });
     }
-
-    return res.status(500).json({
-      success: false,
-      message: "Authentication failed"
-    });
+    console.error("Auth Middleware Error:", error);
+    return res.status(500).json({ success: false, message: "Authentication failed" });
   }
 };
