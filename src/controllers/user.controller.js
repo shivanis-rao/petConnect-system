@@ -4,59 +4,142 @@ import db from "../../models/index.js";
 
 const { User, Shelter } = db;
 
-/*
-CREATE USER (REGISTER)
-*/
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 export const createUser = async (req, res) => {
   try {
-    const { first_name, last_name, email, password, role = "adopter" } = req.body; // <-- include role
+    const {
+      first_name, last_name, email, phone, password,
+      location, living_situation, pet_experience_years, preferred_species,
+    } = req.body;
 
-    // Validation
     if (!first_name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "First name, email and password are required"
+        message: "First name, email, and password are required",
       });
     }
 
-    // Check existing user
     const existingUser = await User.findOne({ where: { email } });
-
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already registered"
-      });
+      return res.status(409).json({ success: false, message: "Email already registered" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    const otp = generateOtp();
+    const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-    // Create user
     const user = await User.create({
-      first_name,
-      last_name,
-      email,
+      first_name, last_name, email, phone,
       password: hashedPassword,
-      role // <-- now role is defined
+      location, living_situation, pet_experience_years, preferred_species,
+      otp,
+      otp_expires_at,
+      email_verified: false,
+      account_status: "Pending",
     });
+
+    await sendOtpEmail(email, otp);
 
     return res.status(201).json({
       success: true,
-      message: "User created successfully",
+      message: "Registration successful! Please check your email for the OTP.",
       data: {
         id: user.id,
-        name: `${user.first_name} ${user.last_name || ""}`.trim(),
         email: user.email,
-        role: user.role
-      }
+      },
     });
+
   } catch (error) {
-    console.error("Create User Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
+    console.error("❌ Create User Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// RESEND OTP  →  POST /api/users/send-otp
+// ─────────────────────────────────────────────
+export const sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.email_verified) {
+      return res.status(400).json({ success: false, message: "Email already verified" });
+    }
+
+    const otp = generateOtp();
+    const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000);
+
+    await user.update({ otp, otp_expires_at });
+    await sendOtpEmail(email, otp);
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP resent successfully. Please check your email.",
     });
+
+  } catch (error) {
+    console.error("❌ Send OTP Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// VERIFY OTP  →  POST /api/users/verify-otp
+// ─────────────────────────────────────────────
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: "Email and OTP are required" });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.email_verified) {
+      return res.status(400).json({ success: false, message: "Email already verified" });
+    }
+
+    // ✅ Expiry check FIRST
+    if (!user.otp_expires_at || new Date() > new Date(user.otp_expires_at)) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      });
+    }
+
+    // ✅ String coercion prevents type mismatch
+    if (String(user.otp) !== String(otp)) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    await user.update({
+      email_verified: true,
+      account_status: "Active",
+      otp: null,
+      otp_expires_at: null,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully! You can now log in.",
+    });
+
+  } catch (error) {
+    console.error("❌ Verify OTP Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
