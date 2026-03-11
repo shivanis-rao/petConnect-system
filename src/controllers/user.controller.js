@@ -9,7 +9,7 @@ CREATE USER (REGISTER)
 */
 export const createUser = async (req, res) => {
   try {
-    const { first_name, last_name, email, password } = req.body;
+    const { first_name, last_name, email, password, role = "adopter" } = req.body; // <-- include role
 
     // Validation
     if (!first_name || !email || !password) {
@@ -37,7 +37,8 @@ export const createUser = async (req, res) => {
       first_name,
       last_name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role // <-- now role is defined
     });
 
     return res.status(201).json({

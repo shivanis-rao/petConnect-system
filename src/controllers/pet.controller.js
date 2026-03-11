@@ -89,21 +89,21 @@ PUT /api/shelter/pets/:id
 */
 export const updatePet = async (req, res) => {
   try {
-
     const pet = await Pet.findByPk(req.params.id);
-    if (pet.shelter_id !== req.user.shelter.id) {
-    return res.status(403).json({ error: "Not authorized to modify this pet" });
-}
 
+    // First, check if the pet exists
     if (!pet) {
-      return res.status(404).json({
-        error: "Pet not found"
-      });
+      return res.status(404).json({ error: "Pet not found" });
+    }
+
+    // Then check if logged-in user is a shelter and owns this pet
+    if (!req.user.shelter || Number(pet.shelter_id) !== Number(req.user.shelter.id)) {
+      return res.status(403).json({ error: "Not authorized to modify this pet" });
     }
 
     await pet.update({
       ...req.body,
-      updated_by: req.user?.id
+      updated_by: req.user.id
     });
 
     return res.status(200).json({
@@ -112,8 +112,10 @@ export const updatePet = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Update Pet Error:", error);
     return res.status(500).json({
-      error: "Failed to update pet"
+      error: "Failed to update pet",
+      details: error.message
     });
   }
 };
@@ -123,23 +125,16 @@ PATCH /api/shelter/pets/:id/status
 */
 export const updatePetStatus = async (req, res) => {
   try {
-
     const pet = await Pet.findByPk(req.params.id);
-    if (pet.shelter_id !== req.user.shelter.id) {
-    return res.status(403).json({ error: "Not authorized to modify this pet" });
-}
 
-    if (!pet) {
-      return res.status(404).json({
-        error: "Pet not found"
-      });
+    if (!pet) return res.status(404).json({ error: "Pet not found" });
+
+    if (!req.user.shelter || Number(pet.shelter_id) !== Number(req.user.shelter.id)) {
+      return res.status(403).json({ error: "Not authorized to modify this pet" });
     }
 
     pet.status = req.body.status;
-
-    if (req.body.status === "Adopted") {
-      pet.adopted_at = new Date();
-    }
+    if (req.body.status === "Adopted") pet.adopted_at = new Date();
 
     await pet.save();
 
@@ -149,8 +144,10 @@ export const updatePetStatus = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Update Pet Status Error:", error);
     return res.status(500).json({
-      error: "Failed to update status"
+      error: "Failed to update pet status",
+      details: error.message
     });
   }
 };
@@ -160,29 +157,23 @@ DELETE /api/shelter/pets/:id
 */
 export const deletePet = async (req, res) => {
   try {
-
     const pet = await Pet.findByPk(req.params.id);
-    if (pet.shelter_id !== req.user.shelter.id) {
-    return res.status(403).json({ error: "Not authorized to modify this pet" });
-}
 
-    if (!pet) {
-      return res.status(404).json({
-        error: "Pet not found"
-      });
+    if (!pet) return res.status(404).json({ error: "Pet not found" });
+
+    if (!req.user.shelter || Number(pet.shelter_id) !== Number(req.user.shelter.id)) {
+      return res.status(403).json({ error: "Not authorized to modify this pet" });
     }
 
-    await pet.update({
-      deleted_at: new Date()
-    });
+    await pet.update({ deleted_at: new Date() });
 
-    return res.status(200).json({
-      message: "Pet listing deleted"
-    });
+    return res.status(200).json({ message: "Pet listing deleted" });
 
   } catch (error) {
+    console.error("Delete Pet Error:", error);
     return res.status(500).json({
-      error: "Failed to delete pet"
+      error: "Failed to delete pet",
+      details: error.message
     });
   }
 };
