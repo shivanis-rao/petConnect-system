@@ -9,10 +9,16 @@ POST /api/shelter/pets
 */
 export const createPet = async (req, res) => {
   try {
+        if (req.user.role !== "shelter") {
+      return res.status(403).json({ error: "Only shelter users can add pets" });
+    }
+
 
     const pet = await Pet.create({
       ...req.body,
-      listed_at: new Date()
+      listed_at: new Date(),
+       shelter_id: req.user.shelter.id, // from logged-in user
+       created_by: req.user.id
     });
 
     return res.status(201).json({
@@ -36,7 +42,7 @@ export const getAllPets = async (req, res) => {
 
     const pets = await Pet.findAll({
       where: {
-        shelter_id: req.user?.id, // or req.body.shelter_id
+        shelter_id: req.user.shelter.id, // or req.body.shelter_id
         deleted_at: null
       }
     });
@@ -59,6 +65,7 @@ export const getPetById = async (req, res) => {
   try {
 
     const pet = await Pet.findByPk(req.params.id);
+  
 
     if (!pet) {
       return res.status(404).json({
@@ -84,6 +91,9 @@ export const updatePet = async (req, res) => {
   try {
 
     const pet = await Pet.findByPk(req.params.id);
+    if (pet.shelter_id !== req.user.shelter.id) {
+    return res.status(403).json({ error: "Not authorized to modify this pet" });
+}
 
     if (!pet) {
       return res.status(404).json({
@@ -115,6 +125,9 @@ export const updatePetStatus = async (req, res) => {
   try {
 
     const pet = await Pet.findByPk(req.params.id);
+    if (pet.shelter_id !== req.user.shelter.id) {
+    return res.status(403).json({ error: "Not authorized to modify this pet" });
+}
 
     if (!pet) {
       return res.status(404).json({
@@ -149,6 +162,9 @@ export const deletePet = async (req, res) => {
   try {
 
     const pet = await Pet.findByPk(req.params.id);
+    if (pet.shelter_id !== req.user.shelter.id) {
+    return res.status(403).json({ error: "Not authorized to modify this pet" });
+}
 
     if (!pet) {
       return res.status(404).json({
