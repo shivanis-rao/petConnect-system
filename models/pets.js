@@ -1,6 +1,6 @@
 import { Model, DataTypes } from "sequelize";
 
-export default (sequelize) => {
+export default (sequelize,DataTypes) => {
   class Pet extends Model {
     static associate(models) {
       // example future relation

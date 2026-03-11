@@ -99,27 +99,10 @@ export default (sequelize, DataTypes) => {
       underscored: true,
     },
   );
-  Shelter.associate = (models) => {
-    Shelter.belongsTo(models.User, {
-      foreignKey: "owner_id",
-      as: "owner",
-    });
-
-    Shelter.belongsTo(models.User, {
-      foreignKey: "approved_by",
-      as: "approvedAdmin",
-    });
-    Shelter.hasOne(models.ShelterNgoDetails, {
-      foreignKey: "shelter_id",
-      as: "ngo_details",
-    });
-
-    Shelter.hasMany(models.ShelterFiles, {
-      foreignKey: "shelter_id",
-      as: "files",
-    });
   
 
+    Shelter.associate = (models) => {
+  // ✅ Only once each
   Shelter.belongsTo(models.User, {
     foreignKey: "owner_id",
     as: "owner",
@@ -130,10 +113,21 @@ export default (sequelize, DataTypes) => {
     as: "approvedAdmin",
   });
 
+  Shelter.hasOne(models.ShelterNgoDetails, {
+    foreignKey: "shelter_id",
+    as: "ngo_details",
+  });
+
+  Shelter.hasMany(models.ShelterFiles, {
+    foreignKey: "shelter_id",
+    as: "files",
+  });
+
   Shelter.hasMany(models.Pet, {
     foreignKey: "shelter_id",
     as: "pets",
   });
+
 
 };
   return Shelter;

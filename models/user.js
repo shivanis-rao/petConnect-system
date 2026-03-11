@@ -1,6 +1,6 @@
 import { Model, DataTypes } from "sequelize";
 
-export default (sequelize) => {
+export default (sequelize,DataTypes) => {
   class User extends Model {
     static associate(models) {}
   }
@@ -22,9 +22,17 @@ export default (sequelize) => {
         allowNull: false,
         unique: true
       },
+      otp: {
+  type: DataTypes.STRING(6),
+  allowNull: true
+},
+otp_expires_at: {
+  type: DataTypes.DATE,
+  allowNull: true
+},
 
       phone: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: true,
         unique: true
       },
