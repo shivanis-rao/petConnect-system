@@ -10,18 +10,19 @@ import {
   browsePets
 } from "../controllers/pet.controller.js";
 
+import { authMiddleware } from "../middlewares/auth.middleware.js"; // Make sure path is correct
+
 const router = express.Router();
 
-/* PUBLIC BROWSE */
+/* PUBLIC - Browse Pets (no auth needed) */
 router.get("/browse", browsePets);
 
-/* SHELTER PET MANAGEMENT */
-router.post("/", createPet);
-router.get("/", getAllPets);
-
-router.get("/:id", getPetById);
-router.put("/:id", updatePet);
-router.patch("/:id/status", updatePetStatus);
-router.delete("/:id", deletePet);
+/* SHELTER PET MANAGEMENT - AUTH REQUIRED */
+router.post("/", authMiddleware, createPet);          // CREATE PET
+router.get("/", authMiddleware, getAllPets);         // GET ALL PETS FOR SHELTER
+router.get("/:id", authMiddleware, getPetById);      // GET PET BY ID
+router.put("/:id", authMiddleware, updatePet);       // UPDATE PET
+router.patch("/:id/status", authMiddleware, updatePetStatus); // UPDATE STATUS
+router.delete("/:id", authMiddleware, deletePet);    // DELETE PET
 
 export default router;
