@@ -48,19 +48,6 @@ const sequelize = new Sequelize(
   }
 );
 
-<<<<<<< HEAD
-// Initialize Sequelize
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
-    host: config.host,
-    dialect: config.dialect,
-  },
-);
-=======
->>>>>>> 2da9c3348a5c78cd1e9215b99bf7303159018a39
 
 const modelFiles = fs
   .readdirSync(__dirname)
