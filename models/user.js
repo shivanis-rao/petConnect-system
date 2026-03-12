@@ -30,7 +30,7 @@ export default (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-      // ✅ OTP fields from Registration-backend
+     
       otp: {
         type: DataTypes.STRING(6),
         allowNull: true,
@@ -74,10 +74,10 @@ export default (sequelize, DataTypes) => {
       },
       deleted_at: {
         type: DataTypes.DATE,
-        allowNull: true, // ✅ from Registration-backend
+        allowNull: true, 
       },
 
-      // ✅ Password reset fields from main
+     
       reset_token: {
         type: DataTypes.STRING(255),
         allowNull: true,
@@ -103,7 +103,7 @@ export default (sequelize, DataTypes) => {
       as: "shelter",
     });
 
-    // ✅ from Registration-backend
+  
     User.hasMany(models.ShelterFiles, {
       foreignKey: "verified_by",
       as: "verified_files",

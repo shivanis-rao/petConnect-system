@@ -7,10 +7,10 @@ const { User, Shelter, OtpStore } = db;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// STEP 1 — SEND OTP (before registration)
+
 export const sendOtp = async (req, res) => {
   try {
-    const { email } = req.body; // ✅ Registration-backend - only email needed at this step
+    const { email } = req.body; 
 
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required" });
@@ -41,7 +41,7 @@ export const sendOtp = async (req, res) => {
   }
 };
 
-// STEP 2 — VERIFY OTP
+
 export const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -76,13 +76,13 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
-// STEP 3 — REGISTER (after OTP verified)
+
 export const createUser = async (req, res) => {
   try {
     const {
       firstName, lastName, phoneNumber, email,
       password, confirmPassword,
-      role = "adopter" // ✅ main - role support with default
+      role = "adopter" 
     } = req.body;
 
     if (!firstName || !email || !password || !confirmPassword) {
@@ -99,7 +99,7 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "Please verify your email first" });
     }
 
-    // Check not already registered
+    
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(409).json({ success: false, message: "Email already registered" });
@@ -113,12 +113,12 @@ export const createUser = async (req, res) => {
       phone: phoneNumber,
       email,
       password: hashedPassword,
-      role,              // ✅ main - role is saved
-      email_verified: true,   // ✅ Registration-backend - mark verified after OTP
-      account_status: "Active" // ✅ Registration-backend - activate after OTP
+      role,              
+      email_verified: true,  
+      account_status: "Active" 
     });
 
-    // Cleanup OTP record
+    
     await OtpStore.destroy({ where: { email } });
 
     return res.status(201).json({
@@ -139,7 +139,7 @@ export const createUser = async (req, res) => {
   }
 };
 
-// UPDATE PROFILE
+
 export const updateProfile = async (req, res) => {
   try {
     const { id } = req.params;
