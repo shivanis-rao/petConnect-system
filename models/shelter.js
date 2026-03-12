@@ -1,5 +1,3 @@
-"use strict";
-
 export default (sequelize, DataTypes) => {
   const Shelter = sequelize.define(
     "Shelter",
@@ -13,15 +11,9 @@ export default (sequelize, DataTypes) => {
       name: {
         type: DataTypes.STRING,
         allowNull: false,
-        validate: {
-          notEmpty: true,
-          len: [3, 100],
-        },
       },
 
-      description: {
-        type: DataTypes.TEXT,
-      },
+      description: DataTypes.TEXT,
 
       type: {
         type: DataTypes.ENUM("ngo", "government", "rescuer"),
@@ -34,14 +26,10 @@ export default (sequelize, DataTypes) => {
         validate: {
           isInt: true,
         },
+        allowNull: false,
       },
 
-      approved_by: {
-        type: DataTypes.INTEGER,
-        validate: {
-          isInt: true,
-        },
-      },
+      approved_by: DataTypes.INTEGER,
 
       status: {
         type: DataTypes.ENUM("Pending", "Verified", "Rejected", "Inactive"),
@@ -51,54 +39,24 @@ export default (sequelize, DataTypes) => {
       contact_email: {
         type: DataTypes.STRING,
         unique: true,
-        validate: {
-          isEmail: true,
-        },
       },
 
-      contact_phone: {
-        type: DataTypes.STRING,
-        validate: {
-          isNumeric: true,
-          len: [10, 15],
-        },
-      },
+      contact_phone: DataTypes.STRING,
 
-      city: {
-        type: DataTypes.STRING,
-        validate: {
-          len: [2, 50],
-        },
-      },
+      city: DataTypes.STRING,
+      state: DataTypes.STRING,
+      country: DataTypes.STRING,
+      zipcode: DataTypes.INTEGER,
 
-      state: {
-        type: DataTypes.STRING,
-      },
-
-      country: {
-        type: DataTypes.STRING,
-      },
-
-      zipcode: {
-        type: DataTypes.INTEGER,
-        validate: {
-          isInt: true,
-        },
-      },
-
-      approved_at: {
-        type: DataTypes.DATE,
-      },
-
-      deleted_at: {
-        type: DataTypes.DATE,
-      },
+      approved_at: DataTypes.DATE,
+      deleted_at: DataTypes.DATE,
     },
     {
       tableName: "shelter",
       underscored: true,
     },
   );
+
   Shelter.associate = (models) => {
     Shelter.belongsTo(models.User, {
       foreignKey: "owner_id",
@@ -109,14 +67,15 @@ export default (sequelize, DataTypes) => {
       foreignKey: "approved_by",
       as: "approvedAdmin",
     });
+
     Shelter.hasOne(models.ShelterNgoDetails, {
       foreignKey: "shelter_id",
       as: "ngo_details",
     });
 
-    Shelter.hasMany(models.ShelterFiles, {
+    Shelter.hasMany(models.Pet, {
       foreignKey: "shelter_id",
-      as: "files",
+      as: "pets",
     });
   };
 
