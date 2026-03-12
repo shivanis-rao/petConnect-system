@@ -30,7 +30,6 @@ export default (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-     
       otp: {
         type: DataTypes.STRING(6),
         allowNull: true,
@@ -74,10 +73,9 @@ export default (sequelize, DataTypes) => {
       },
       deleted_at: {
         type: DataTypes.DATE,
-        allowNull: true, 
+        allowNull: true,
       },
 
-     
       reset_token: {
         type: DataTypes.STRING(255),
         allowNull: true,
@@ -94,7 +92,7 @@ export default (sequelize, DataTypes) => {
       timestamps: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
-    }
+    },
   );
 
   User.associate = (models) => {
@@ -103,7 +101,6 @@ export default (sequelize, DataTypes) => {
       as: "shelter",
     });
 
-  
     User.hasMany(models.ShelterFiles, {
       foreignKey: "verified_by",
       as: "verified_files",

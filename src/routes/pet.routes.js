@@ -7,7 +7,7 @@ import {
   updatePet,
   updatePetStatus,
   deletePet,
-  browsePets
+  browsePets,
 } from "../controllers/pet.controller.js";
 
 import { authMiddleware } from "../middlewares/auth.middleware.js"; // Make sure path is correct
@@ -19,11 +19,11 @@ router.get("/browse", browsePets);
 router.get("/public/:id", getPetById);
 
 /* SHELTER PET MANAGEMENT - AUTH REQUIRED */
-router.post("/", authMiddleware, createPet);          // CREATE PET
-router.get("/", authMiddleware, getAllPets);         // GET ALL PETS FOR SHELTER
-router.get("/:id", authMiddleware, getPetById);      // GET PET BY ID
-router.put("/:id", authMiddleware, updatePet);       // UPDATE PET
+router.post("/", authMiddleware, createPet); // CREATE PET
+router.get("/", authMiddleware, getAllPets); // GET ALL PETS FOR SHELTER
+router.get("/:id", authMiddleware, getPetById); // GET PET BY ID
+router.put("/:id", authMiddleware, updatePet); // UPDATE PET
 router.patch("/:id/status", authMiddleware, updatePetStatus); // UPDATE STATUS
-router.delete("/:id", authMiddleware, deletePet);    // DELETE PET
+router.delete("/:id", authMiddleware, deletePet); // DELETE PET
 
 export default router;

@@ -19,7 +19,7 @@ export const forgotPassword = async (req, res) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Email is required"
+        message: "Email is required",
       });
     }
 
@@ -29,7 +29,7 @@ export const forgotPassword = async (req, res) => {
     if (!user) {
       return res.status(200).json({
         success: true,
-        message: "If this email exists, a reset link has been sent"
+        message: "If this email exists, a reset link has been sent",
       });
     }
 
@@ -42,7 +42,7 @@ export const forgotPassword = async (req, res) => {
     // Save token to user
     await user.update({
       reset_token: resetToken,
-      reset_token_expiry: resetTokenExpiry
+      reset_token_expiry: resetTokenExpiry,
     });
 
     // Build reset link
@@ -53,14 +53,13 @@ export const forgotPassword = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "If this email exists, a reset link has been sent"
+      message: "If this email exists, a reset link has been sent",
     });
-
   } catch (error) {
     console.error("Forgot Password Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Internal server error",
     });
   }
 };
@@ -77,14 +76,14 @@ export const resetPassword = async (req, res) => {
     if (!token || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: "Token and new password are required"
+        message: "Token and new password are required",
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters"
+        message: "Password must be at least 6 characters",
       });
     }
 
@@ -94,7 +93,7 @@ export const resetPassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired reset link"
+        message: "Invalid or expired reset link",
       });
     }
 
@@ -102,7 +101,7 @@ export const resetPassword = async (req, res) => {
     if (new Date() > new Date(user.reset_token_expiry)) {
       return res.status(400).json({
         success: false,
-        message: "Reset link has expired. Please request a new one"
+        message: "Reset link has expired. Please request a new one",
       });
     }
 
@@ -113,18 +112,22 @@ export const resetPassword = async (req, res) => {
     await user.update({
       password: hashedPassword,
       reset_token: null,
-      reset_token_expiry: null
+      reset_token_expiry: null,
     });
 
     // Auto login — generate tokens
     const payload = {
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
     };
 
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
-    const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "2h",
+    });
+    const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
     return res.status(200).json({
       success: true,
@@ -136,16 +139,15 @@ export const resetPassword = async (req, res) => {
           id: user.id,
           name: `${user.first_name} ${user.last_name || ""}`.trim(),
           email: user.email,
-          role: user.role
-        }
-      }
+          role: user.role,
+        },
+      },
     });
-
   } catch (error) {
     console.error("Reset Password Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Internal server error",
     });
   }
 };

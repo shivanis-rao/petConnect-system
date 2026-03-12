@@ -9,27 +9,25 @@ POST /api/shelter/pets
 */
 export const createPet = async (req, res) => {
   try {
-        if (req.user.role !== "shelter") {
+    if (req.user.role !== "shelter") {
       return res.status(403).json({ error: "Only shelter users can add pets" });
     }
-
 
     const pet = await Pet.create({
       ...req.body,
       listed_at: new Date(),
-       shelter_id: req.user.shelter.id, // from logged-in user
-       created_by: req.user.id
+      shelter_id: req.user.shelter.id, // from logged-in user
+      created_by: req.user.id,
     });
 
     return res.status(201).json({
       message: "Pet created successfully",
-      data: pet
+      data: pet,
     });
-
   } catch (error) {
     return res.status(500).json({
       error: "Failed to create pet",
-      details: error.message
+      details: error.message,
     });
   }
 };
@@ -39,21 +37,19 @@ GET /api/shelter/pets
 */
 export const getAllPets = async (req, res) => {
   try {
-
     const pets = await Pet.findAll({
       where: {
         shelter_id: req.user.shelter.id, // or req.body.shelter_id
-        deleted_at: null
-      }
+        deleted_at: null,
+      },
     });
 
     return res.status(200).json({
-      data: pets
+      data: pets,
     });
-
   } catch (error) {
     return res.status(500).json({
-      error: "Failed to fetch pets"
+      error: "Failed to fetch pets",
     });
   }
 };
@@ -63,23 +59,20 @@ GET /api/shelter/pets/:id
 */
 export const getPetById = async (req, res) => {
   try {
-
     const pet = await Pet.findByPk(req.params.id);
-  
 
     if (!pet) {
       return res.status(404).json({
-        error: "Pet not found"
+        error: "Pet not found",
       });
     }
 
     return res.status(200).json({
-      data: pet
+      data: pet,
     });
-
   } catch (error) {
     return res.status(500).json({
-      error: "Failed to fetch pet"
+      error: "Failed to fetch pet",
     });
   }
 };
@@ -97,25 +90,29 @@ export const updatePet = async (req, res) => {
     }
 
     // Then check if logged-in user is a shelter and owns this pet
-    if (!req.user.shelter || Number(pet.shelter_id) !== Number(req.user.shelter.id)) {
-      return res.status(403).json({ error: "Not authorized to modify this pet" });
+    if (
+      !req.user.shelter ||
+      Number(pet.shelter_id) !== Number(req.user.shelter.id)
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to modify this pet" });
     }
 
     await pet.update({
       ...req.body,
-      updated_by: req.user.id
+      updated_by: req.user.id,
     });
 
     return res.status(200).json({
       message: "Pet updated successfully",
-      data: pet
+      data: pet,
     });
-
   } catch (error) {
     console.error("Update Pet Error:", error);
     return res.status(500).json({
       error: "Failed to update pet",
-      details: error.message
+      details: error.message,
     });
   }
 };
@@ -129,8 +126,13 @@ export const updatePetStatus = async (req, res) => {
 
     if (!pet) return res.status(404).json({ error: "Pet not found" });
 
-    if (!req.user.shelter || Number(pet.shelter_id) !== Number(req.user.shelter.id)) {
-      return res.status(403).json({ error: "Not authorized to modify this pet" });
+    if (
+      !req.user.shelter ||
+      Number(pet.shelter_id) !== Number(req.user.shelter.id)
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to modify this pet" });
     }
 
     pet.status = req.body.status;
@@ -140,14 +142,13 @@ export const updatePetStatus = async (req, res) => {
 
     return res.status(200).json({
       message: "Pet status updated",
-      data: pet
+      data: pet,
     });
-
   } catch (error) {
     console.error("Update Pet Status Error:", error);
     return res.status(500).json({
       error: "Failed to update pet status",
-      details: error.message
+      details: error.message,
     });
   }
 };
@@ -161,25 +162,28 @@ export const deletePet = async (req, res) => {
 
     if (!pet) return res.status(404).json({ error: "Pet not found" });
 
-    if (!req.user.shelter || Number(pet.shelter_id) !== Number(req.user.shelter.id)) {
-      return res.status(403).json({ error: "Not authorized to modify this pet" });
+    if (
+      !req.user.shelter ||
+      Number(pet.shelter_id) !== Number(req.user.shelter.id)
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to modify this pet" });
     }
 
     await pet.update({ deleted_at: new Date() });
 
     return res.status(200).json({ message: "Pet listing deleted" });
-
   } catch (error) {
     console.error("Delete Pet Error:", error);
     return res.status(500).json({
       error: "Failed to delete pet",
-      details: error.message
+      details: error.message,
     });
   }
 };
 export const browsePets = async (req, res) => {
   try {
-
     const {
       species,
       breed,
@@ -193,12 +197,12 @@ export const browsePets = async (req, res) => {
       city,
       page = 1,
       limit = 9,
-      sort = "newest"
+      sort = "newest",
     } = req.query;
 
     const where = {
       deleted_at: null,
-      status: "Available"
+      status: "Available",
     };
 
     // PET FILTERS
@@ -210,9 +214,11 @@ export const browsePets = async (req, res) => {
 
     if (vaccinated !== undefined) where.vaccinated = vaccinated === "true";
 
-    if (special_needs !== undefined) where.special_needs = special_needs === "true";
+    if (special_needs !== undefined)
+      where.special_needs = special_needs === "true";
 
-    if (good_with_kids !== undefined) where.good_with_kids = good_with_kids === "true";
+    if (good_with_kids !== undefined)
+      where.good_with_kids = good_with_kids === "true";
 
     if (age_min || age_max) {
       where.age = {};
@@ -226,7 +232,7 @@ export const browsePets = async (req, res) => {
 
     // if (zipcode) shelterFilter.zipcode = zipcode;
 
-   if (city) shelterFilter.city = { [Op.iLike]: `%${city}%` };
+    if (city) shelterFilter.city = { [Op.iLike]: `%${city}%` };
 
     // PAGINATION
 
@@ -242,31 +248,30 @@ export const browsePets = async (req, res) => {
 
     const pets = await Pet.findAndCountAll({
       where,
-    include: [
-  {
-    model: Shelter,
-    as: "shelter",
-    attributes: ["name", "city", "state", "zipcode"],
-    where: Object.keys(shelterFilter).length ? shelterFilter : undefined,
-    required: Object.keys(shelterFilter).length ? true : false
-  }
-],
+      include: [
+        {
+          model: Shelter,
+          as: "shelter",
+          attributes: ["name", "city", "state", "zipcode"],
+          where: Object.keys(shelterFilter).length ? shelterFilter : undefined,
+          required: Object.keys(shelterFilter).length ? true : false,
+        },
+      ],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order
+      order,
     });
 
     return res.status(200).json({
       total: pets.count,
       page: Number(page),
       totalPages: Math.ceil(pets.count / limit),
-      pets: pets.rows
+      pets: pets.rows,
     });
-
   } catch (error) {
     return res.status(500).json({
       error: "Failed to browse pets",
-      details: error.message
+      details: error.message,
     });
   }
 };

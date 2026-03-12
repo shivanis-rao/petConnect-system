@@ -1,14 +1,17 @@
 import express from "express";
-import { 
-  createUser, 
-  loginUser, 
-  sendOtp, 
-  verifyOtp, 
-  updateProfile, 
-  refreshToken  
+import {
+  createUser,
+  loginUser,
+  sendOtp,
+  verifyOtp,
+  updateProfile,
+  refreshToken,
 } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { forgotPassword, resetPassword } from "../controllers/Passwordreset.controller.js";
+import {
+  forgotPassword,
+  resetPassword,
+} from "../controllers/Passwordreset.controller.js";
 
 const router = express.Router();
 
@@ -27,7 +30,7 @@ router.post("/reset-password", resetPassword);
 router.get("/profile", authMiddleware, (req, res) => {
   res.json({
     message: "Profile data",
-    user: req.user
+    user: req.user,
   });
 });
 router.put("/:id/profile", authMiddleware, updateProfile);

@@ -22,7 +22,7 @@ export default (sequelize, DataTypes) => {
 
       owner_id: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+
         validate: {
           isInt: true,
         },
