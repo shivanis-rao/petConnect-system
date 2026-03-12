@@ -1,73 +1,193 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../../models/index.js";
+import { sendOtpEmail } from "../../utils/mailer.js";
 
-const { User, Shelter } = db;
+const { User, Shelter, OtpStore } = db;
 
-/*
-CREATE USER (REGISTER)
-*/
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// STEP 1 — SEND OTP (before registration)
+export const sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body; // ✅ Registration-backend - only email needed at this step
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: "Email already registered" });
+    }
+
+    const otp = generateOtp();
+    const expires_at = new Date(Date.now() + 10 * 60 * 1000);
+
+    await OtpStore.destroy({ where: { email } });
+    await OtpStore.create({ email, otp, expires_at, is_verified: false });
+
+    const previewUrl = await sendOtpEmail(email, otp);
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+      dev: { otp, previewUrl }
+    });
+
+  } catch (error) {
+    console.error("Send OTP Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// STEP 2 — VERIFY OTP
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: "Email and OTP are required" });
+    }
+
+    const otpRecord = await OtpStore.findOne({ where: { email } });
+    if (!otpRecord) {
+      return res.status(404).json({ success: false, message: "OTP not found. Please request a new one" });
+    }
+
+    if (new Date() > otpRecord.expires_at) {
+      return res.status(400).json({ success: false, message: "OTP expired. Please request a new one" });
+    }
+
+    if (String(otpRecord.otp) !== String(otp)) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    await otpRecord.update({ is_verified: true });
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully"
+    });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// STEP 3 — REGISTER (after OTP verified)
 export const createUser = async (req, res) => {
   try {
-    const { first_name, last_name, email, password, role = "adopter" } = req.body; // ✅ Your version - role support
+    const {
+      firstName, lastName, phoneNumber, email,
+      password, confirmPassword,
+      role = "adopter" // ✅ main - role support with default
+    } = req.body;
 
-    // Validation
-    if (!first_name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "First name, email and password are required"
-      });
+    if (!firstName || !email || !password || !confirmPassword) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // Check existing user
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: "Passwords do not match" });
+    }
+
+    // Check OTP was verified
+    const otpRecord = await OtpStore.findOne({ where: { email } });
+    if (!otpRecord || !otpRecord.is_verified) {
+      return res.status(400).json({ success: false, message: "Please verify your email first" });
+    }
+
+    // Check not already registered
     const existingUser = await User.findOne({ where: { email } });
-
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already registered"
-      });
+      return res.status(409).json({ success: false, message: "Email already registered" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await User.create({
-      first_name,
-      last_name,
+      first_name: firstName,
+      last_name: lastName,
+      phone: phoneNumber,
       email,
       password: hashedPassword,
-      role // ✅ Your version - role is saved
+      role,              // ✅ main - role is saved
+      email_verified: true,   // ✅ Registration-backend - mark verified after OTP
+      account_status: "Active" // ✅ Registration-backend - activate after OTP
     });
+
+    // Cleanup OTP record
+    await OtpStore.destroy({ where: { email } });
 
     return res.status(201).json({
       success: true,
-      message: "User created successfully",
+      message: "User registered successfully",
       data: {
         id: user.id,
-        name: `${user.first_name} ${user.last_name || ""}`.trim(),
+        firstName: user.first_name,
+        lastName: user.last_name,
         email: user.email,
         role: user.role
       }
     });
+
   } catch (error) {
-    console.error("Create User Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    });
+    console.error("Register Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/*
-LOGIN USER
-*/
+// UPDATE PROFILE
+export const updateProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      location,
+      living_situation,
+      preferred_species,
+      pet_experience_years,
+      profile_completed
+    } = req.body;
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    await user.update({
+      location,
+      living_situation,
+      preferred_species,
+      pet_experience_years,
+      profile_completed: profile_completed || true
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        id: user.id,
+        location: user.location,
+        living_situation: user.living_situation,
+        preferred_species: user.preferred_species,
+        pet_experience_years: user.pet_experience_years,
+        profile_completed: user.profile_completed
+      }
+    });
+
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// LOGIN
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -75,9 +195,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Find user
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -85,9 +203,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -95,20 +211,15 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // JWT payload
     const payload = {
       id: user.id,
       email: user.email,
       role: user.role
     };
 
-    // Access Token
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
-
-    // Refresh Token
     const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    // Attach shelter info if user is shelter
     let shelterData = null;
     if (user.role === "shelter") {
       const shelter = await Shelter.findOne({ where: { owner_id: user.id } });
@@ -130,6 +241,7 @@ export const loginUser = async (req, res) => {
         }
       }
     });
+
   } catch (error) {
     console.error("Login Error:", error);
     return res.status(500).json({
@@ -140,10 +252,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
-/*
-REFRESH TOKEN
-✅ Teammate's version - you were missing this
-*/
+// REFRESH TOKEN
 export const refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -155,10 +264,7 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-
-    // Find user
     const user = await User.findByPk(decoded.id);
 
     if (!user) {
@@ -168,7 +274,6 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Issue new access token
     const payload = {
       id: user.id,
       email: user.email,
