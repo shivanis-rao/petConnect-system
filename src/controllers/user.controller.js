@@ -9,7 +9,7 @@ CREATE USER (REGISTER)
 */
 export const createUser = async (req, res) => {
   try {
-    const { first_name, last_name, email, password, role = "adopter" } = req.body; // <-- include role
+    const { first_name, last_name, email, password, role = "adopter" } = req.body; // ✅ Your version - role support
 
     // Validation
     if (!first_name || !email || !password) {
@@ -38,7 +38,7 @@ export const createUser = async (req, res) => {
       last_name,
       email,
       password: hashedPassword,
-      role // <-- now role is defined
+      role // ✅ Your version - role is saved
     });
 
     return res.status(201).json({
@@ -136,6 +136,59 @@ export const loginUser = async (req, res) => {
       success: false,
       message: "Login failed",
       error: error.message
+    });
+  }
+};
+
+/*
+REFRESH TOKEN
+✅ Teammate's version - you were missing this
+*/
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token required"
+      });
+    }
+
+    // Verify refresh token
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+
+    // Find user
+    const user = await User.findByPk(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Issue new access token
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    };
+
+    const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Token refreshed",
+      data: {
+        accessToken: newAccessToken
+      }
+    });
+
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired refresh token"
     });
   }
 };
