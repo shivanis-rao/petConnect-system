@@ -56,7 +56,7 @@ const modelFiles = fs
       file.indexOf(".") !== 0 &&
       file !== path.basename(__filename) &&
       file.slice(-3) === ".js" &&
-      !file.endsWith(".test.js")
+      !file.endsWith(".test.js"),
   );
 
 for (const file of modelFiles) {

@@ -22,6 +22,10 @@ export default (sequelize, DataTypes) => {
 
       owner_id: {
         type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+          isInt: true,
+        },
         allowNull: false,
       },
 
@@ -50,7 +54,7 @@ export default (sequelize, DataTypes) => {
     {
       tableName: "shelter",
       underscored: true,
-    }
+    },
   );
 
   Shelter.associate = (models) => {
@@ -68,8 +72,6 @@ export default (sequelize, DataTypes) => {
       foreignKey: "shelter_id",
       as: "ngo_details",
     });
-
-   
 
     Shelter.hasMany(models.Pet, {
       foreignKey: "shelter_id",
