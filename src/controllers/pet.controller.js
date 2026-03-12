@@ -204,8 +204,7 @@ export const browsePets = async (req, res) => {
     // PET FILTERS
 
     if (species) where.species = species;
-
-    if (breed) where.breed = breed;
+    if (breed) where.breed = { [Op.iLike]: `%${breed}%` };
 
     if (gender) where.gender = gender;
 
@@ -225,9 +224,9 @@ export const browsePets = async (req, res) => {
 
     const shelterFilter = {};
 
-    if (zipcode) shelterFilter.zipcode = zipcode;
+    // if (zipcode) shelterFilter.zipcode = zipcode;
 
-    if (city) shelterFilter.city = city;
+   if (city) shelterFilter.city = { [Op.iLike]: `%${city}%` };
 
     // PAGINATION
 
@@ -243,13 +242,13 @@ export const browsePets = async (req, res) => {
 
     const pets = await Pet.findAndCountAll({
       where,
-     include: [
+    include: [
   {
     model: Shelter,
     as: "shelter",
     attributes: ["name", "city", "state", "zipcode"],
     where: Object.keys(shelterFilter).length ? shelterFilter : undefined,
-    required: false
+    required: Object.keys(shelterFilter).length ? true : false
   }
 ],
       limit: parseInt(limit),

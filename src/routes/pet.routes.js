@@ -16,6 +16,7 @@ const router = express.Router();
 
 /* PUBLIC - Browse Pets (no auth needed) */
 router.get("/browse", browsePets);
+router.get("/public/:id", getPetById);
 
 /* SHELTER PET MANAGEMENT - AUTH REQUIRED */
 router.post("/", authMiddleware, createPet);          // CREATE PET

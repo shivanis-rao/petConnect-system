@@ -1,22 +1,21 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../../models/index.js";
-import { sendOtpEmail } from "../../utils/mailer.js";  
+import { sendOtpEmail } from "../../utils/mailer.js";
 
-const { User, Shelter, OtpStore } = db;  
+const { User, Shelter, OtpStore } = db;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// SEND OTP (before registration)
+// STEP 1 — SEND OTP (before registration)
 export const sendOtp = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email } = req.body; // ✅ Registration-backend - only email needed at this step
 
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-    
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(409).json({ success: false, message: "Email already registered" });
@@ -25,7 +24,6 @@ export const sendOtp = async (req, res) => {
     const otp = generateOtp();
     const expires_at = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Delete old OTP if exists, create new one
     await OtpStore.destroy({ where: { email } });
     await OtpStore.create({ email, otp, expires_at, is_verified: false });
 
@@ -34,7 +32,7 @@ export const sendOtp = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
-      dev: { otp, previewUrl }  
+      dev: { otp, previewUrl }
     });
 
   } catch (error) {
@@ -52,7 +50,6 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email and OTP are required" });
     }
 
-    // Check OtpStore, NOT users table
     const otpRecord = await OtpStore.findOne({ where: { email } });
     if (!otpRecord) {
       return res.status(404).json({ success: false, message: "OTP not found. Please request a new one" });
@@ -84,7 +81,8 @@ export const createUser = async (req, res) => {
   try {
     const {
       firstName, lastName, phoneNumber, email,
-      password, confirmPassword
+      password, confirmPassword,
+      role = "adopter" // ✅ main - role support with default
     } = req.body;
 
     if (!firstName || !email || !password || !confirmPassword) {
@@ -115,8 +113,9 @@ export const createUser = async (req, res) => {
       phone: phoneNumber,
       email,
       password: hashedPassword,
-      email_verified: true,
-      account_status: "Active"
+      role,              // ✅ main - role is saved
+      email_verified: true,   // ✅ Registration-backend - mark verified after OTP
+      account_status: "Active" // ✅ Registration-backend - activate after OTP
     });
 
     // Cleanup OTP record
@@ -129,7 +128,8 @@ export const createUser = async (req, res) => {
         id: user.id,
         firstName: user.first_name,
         lastName: user.last_name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
 
@@ -139,6 +139,7 @@ export const createUser = async (req, res) => {
   }
 };
 
+// UPDATE PROFILE
 export const updateProfile = async (req, res) => {
   try {
     const { id } = req.params;
@@ -182,14 +183,11 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-/*
-LOGIN USER
-*/
+// LOGIN
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -197,9 +195,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Find user
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -207,9 +203,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -217,20 +211,15 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // JWT payload
     const payload = {
       id: user.id,
       email: user.email,
       role: user.role
     };
 
-    // Access Token
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
-
-    // Refresh Token
     const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    // Attach shelter info if user is shelter
     let shelterData = null;
     if (user.role === "shelter") {
       const shelter = await Shelter.findOne({ where: { owner_id: user.id } });
@@ -252,12 +241,59 @@ export const loginUser = async (req, res) => {
         }
       }
     });
+
   } catch (error) {
     console.error("Login Error:", error);
     return res.status(500).json({
       success: false,
       message: "Login failed",
       error: error.message
+    });
+  }
+};
+
+// REFRESH TOKEN
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token required"
+      });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const user = await User.findByPk(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    };
+
+    const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Token refreshed",
+      data: {
+        accessToken: newAccessToken
+      }
+    });
+
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired refresh token"
     });
   }
 };
