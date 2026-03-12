@@ -51,7 +51,6 @@ export default (sequelize, DataTypes) => {
     },
   );
 
-  /* ASSOCIATIONS */
   ShelterNgoDetails.associate = (models) => {
     ShelterNgoDetails.belongsTo(models.Shelter, {
       foreignKey: "shelter_id",

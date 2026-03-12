@@ -1,7 +1,9 @@
-import express from "express"
+import express from "express";
 import cors from "cors";
-
+import dotenv from "dotenv";
+dotenv.config();
 import userRoutes from "./routes/user.routes.js";
+import shelterRoutes from "./routes/shelter.routes.js";
 
 const app = express();
 
@@ -10,4 +12,6 @@ app.use(express.json());
 
 app.use("/api/users", userRoutes);
 
-export  default app;
+app.use("/api/shelters", shelterRoutes);
+
+export default app;

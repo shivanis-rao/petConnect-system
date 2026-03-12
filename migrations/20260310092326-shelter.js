@@ -27,7 +27,7 @@ export default {
 
       owner_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         unique: true,
         references: {
           model: "Users",

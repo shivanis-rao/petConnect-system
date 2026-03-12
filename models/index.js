@@ -27,20 +27,25 @@ const config = {
 };
 
 // Initialize Sequelize
-const sequelize = new Sequelize(config.database, config.username, config.password, {
-  host: config.host,
-  dialect: config.dialect,
-});
+const sequelize = new Sequelize(
+  config.database,
+  config.username,
+  config.password,
+  {
+    host: config.host,
+    dialect: config.dialect,
+  },
+);
 
 // Dynamically import models
 const modelFiles = fs
   .readdirSync(__dirname)
   .filter(
-    file =>
+    (file) =>
       file.indexOf(".") !== 0 &&
       file !== path.basename(__filename) &&
       file.slice(-3) === ".js" &&
-      !file.endsWith(".test.js")
+      !file.endsWith(".test.js"),
   );
 
 for (const file of modelFiles) {
