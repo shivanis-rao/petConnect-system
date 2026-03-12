@@ -1,6 +1,5 @@
 import { Model } from "sequelize";
 
-// ✅ Removed duplicate `import { DataTypes }` — it's passed as argument from index.js
 export default (sequelize, DataTypes) => {
   class User extends Model {}
 
@@ -22,9 +21,9 @@ export default (sequelize, DataTypes) => {
         unique: true,
       },
 
-      // ✅ Matches migration: changed to BIGINT (supports large phone numbers)
+      
       phone: {
-        type: DataTypes.BIGINT,   // ❌ was DataTypes.INTEGER[10] — invalid, returned undefined
+        type: DataTypes.BIGINT, 
         allowNull: true,
         unique: true,
       },

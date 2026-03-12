@@ -1,5 +1,5 @@
 import express from "express";
-import { createUser, loginUser, sendOtp, verifyOtp } from "../controllers/user.controller.js";
+import { createUser, loginUser, sendOtp, verifyOtp ,updateProfile} from "../controllers/user.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -15,5 +15,6 @@ router.get("/profile", authMiddleware, (req, res) => {
     user: req.user
   });
 });
+router.put("/:id/profile", authMiddleware, updateProfile);
 
 export default router;

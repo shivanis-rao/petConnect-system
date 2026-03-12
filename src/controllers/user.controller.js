@@ -1,63 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../../models/index.js";
+import { sendOtpEmail } from "../../utils/mailer.js";  
 
-const { User, Shelter } = db;
+const { User, Shelter, OtpStore } = db;  
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
-export const createUser = async (req, res) => {
-  try {
-    const {
-      first_name, last_name, email, phone, password,
-      location, living_situation, pet_experience_years, preferred_species,
-    } = req.body;
 
-    if (!first_name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "First name, email, and password are required",
-      });
-    }
-
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(409).json({ success: false, message: "Email already registered" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const otp = generateOtp();
-    const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
-    const user = await User.create({
-      first_name, last_name, email, phone,
-      password: hashedPassword,
-      location, living_situation, pet_experience_years, preferred_species,
-      otp,
-      otp_expires_at,
-      email_verified: false,
-      account_status: "Pending",
-    });
-
-    await sendOtpEmail(email, otp);
-
-    return res.status(201).json({
-      success: true,
-      message: "Registration successful! Please check your email for the OTP.",
-      data: {
-        id: user.id,
-        email: user.email,
-      },
-    });
-
-  } catch (error) {
-    console.error("❌ Create User Error:", error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ─────────────────────────────────────────────
-// RESEND OTP  →  POST /api/users/send-otp
-// ─────────────────────────────────────────────
+// SEND OTP (before registration)
 export const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -66,35 +16,34 @@ export const sendOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    if (user.email_verified) {
-      return res.status(400).json({ success: false, message: "Email already verified" });
+    
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: "Email already registered" });
     }
 
     const otp = generateOtp();
-    const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000);
+    const expires_at = new Date(Date.now() + 10 * 60 * 1000);
 
-    await user.update({ otp, otp_expires_at });
-    await sendOtpEmail(email, otp);
+    // Delete old OTP if exists, create new one
+    await OtpStore.destroy({ where: { email } });
+    await OtpStore.create({ email, otp, expires_at, is_verified: false });
+
+    const previewUrl = await sendOtpEmail(email, otp);
 
     return res.status(200).json({
       success: true,
-      message: "OTP resent successfully. Please check your email.",
+      message: "OTP sent successfully",
+      dev: { otp, previewUrl }  
     });
 
   } catch (error) {
-    console.error("❌ Send OTP Error:", error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Send OTP Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-// ─────────────────────────────────────────────
-// VERIFY OTP  →  POST /api/users/verify-otp
-// ─────────────────────────────────────────────
+// STEP 2 — VERIFY OTP
 export const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -103,42 +52,132 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email and OTP are required" });
     }
 
-    const user = await User.findOne({ where: { email } });
+    // Check OtpStore, NOT users table
+    const otpRecord = await OtpStore.findOne({ where: { email } });
+    if (!otpRecord) {
+      return res.status(404).json({ success: false, message: "OTP not found. Please request a new one" });
+    }
+
+    if (new Date() > otpRecord.expires_at) {
+      return res.status(400).json({ success: false, message: "OTP expired. Please request a new one" });
+    }
+
+    if (String(otpRecord.otp) !== String(otp)) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    await otpRecord.update({ is_verified: true });
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully"
+    });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// STEP 3 — REGISTER (after OTP verified)
+export const createUser = async (req, res) => {
+  try {
+    const {
+      firstName, lastName, phoneNumber, email,
+      password, confirmPassword
+    } = req.body;
+
+    if (!firstName || !email || !password || !confirmPassword) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: "Passwords do not match" });
+    }
+
+    // Check OTP was verified
+    const otpRecord = await OtpStore.findOne({ where: { email } });
+    if (!otpRecord || !otpRecord.is_verified) {
+      return res.status(400).json({ success: false, message: "Please verify your email first" });
+    }
+
+    // Check not already registered
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: "Email already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      first_name: firstName,
+      last_name: lastName,
+      phone: phoneNumber,
+      email,
+      password: hashedPassword,
+      email_verified: true,
+      account_status: "Active"
+    });
+
+    // Cleanup OTP record
+    await OtpStore.destroy({ where: { email } });
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      data: {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email
+      }
+    });
+
+  } catch (error) {
+    console.error("Register Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      location,
+      living_situation,
+      preferred_species,
+      pet_experience_years,
+      profile_completed
+    } = req.body;
+
+    const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    if (user.email_verified) {
-      return res.status(400).json({ success: false, message: "Email already verified" });
-    }
-
-    // ✅ Expiry check FIRST
-    if (!user.otp_expires_at || new Date() > new Date(user.otp_expires_at)) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired. Please request a new one.",
-      });
-    }
-
-    // ✅ String coercion prevents type mismatch
-    if (String(user.otp) !== String(otp)) {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
-    }
-
     await user.update({
-      email_verified: true,
-      account_status: "Active",
-      otp: null,
-      otp_expires_at: null,
+      location,
+      living_situation,
+      preferred_species,
+      pet_experience_years,
+      profile_completed: profile_completed || true
     });
 
     return res.status(200).json({
       success: true,
-      message: "Email verified successfully! You can now log in.",
+      message: "Profile updated successfully",
+      data: {
+        id: user.id,
+        location: user.location,
+        living_situation: user.living_situation,
+        preferred_species: user.preferred_species,
+        pet_experience_years: user.pet_experience_years,
+        profile_completed: user.profile_completed
+      }
     });
 
   } catch (error) {
-    console.error("❌ Verify OTP Error:", error);
+    console.error("Update Profile Error:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };

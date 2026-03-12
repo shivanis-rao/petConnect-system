@@ -11,11 +11,11 @@ const __dirname = path.dirname(__filename);
 
 const db = {};
 
-// ✅ Validate required env vars before doing anything
+// Validate required env vars before doing anything
 const required = ["DB_USERNAME", "DB_PASSWORD", "DB_NAME", "DB_HOST"];
 for (const key of required) {
   if (!process.env[key]) {
-    console.error(`❌ Missing required env variable: ${key}`);
+    console.error(` Missing required env variable: ${key}`);
     process.exit(1);
   }
 }
@@ -26,12 +26,12 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || "5432"), // ✅ Always set port explicitly
+    port: parseInt(process.env.DB_PORT || "5432"), // Always set port explicitly
     dialect: process.env.DB_DIALECT || "postgres",
 
-    logging: (msg) => console.log("🗄️  SQL:", msg), // ✅ See every query — remove in production
+    logging: (msg) => console.log(" SQL:", msg), //  See every query — remove in production
 
-    // ✅ Pool config — prevents transaction starvation/hanging
+    // Pool config — prevents transaction starvation/hanging
     pool: {
       max: 10,        // max connections in pool
       min: 0,         // min connections in pool
@@ -40,15 +40,15 @@ const sequelize = new Sequelize(
     },
 
     dialectOptions: {
-      // ✅ Statement timeout — kills any query hanging more than 10s
+      //  Statement timeout — kills any query hanging more than 10s
       statement_timeout: 10000,
-      // ✅ Lock timeout — kills any transaction waiting for a lock more than 5s
+      // Lock timeout — kills any transaction waiting for a lock more than 5s
       lock_timeout: 5000,
     },
   }
 );
 
-// ✅ Dynamically load all model files in this directory
+
 const modelFiles = fs
   .readdirSync(__dirname)
   .filter(
@@ -60,13 +60,13 @@ const modelFiles = fs
   );
 
 for (const file of modelFiles) {
-  console.log("📦 Loading model:", file);
+  console.log("Loading model:", file);
   const modelModule = await import(path.join(__dirname, file));
   const model = modelModule.default(sequelize, Sequelize.DataTypes);
   db[model.name] = model;
 }
 
-// ✅ Apply associations
+
 for (const modelName of Object.keys(db)) {
   if (db[modelName].associate) {
     db[modelName].associate(db);
