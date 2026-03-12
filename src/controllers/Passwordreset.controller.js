@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../../models/index.js";
 // import { sendResetEmail } from "../../Server/src/services/Emailservice.js";
+import { sendResetEmail } from "../../utils/mailer.js";
 
 const { User } = db;
 

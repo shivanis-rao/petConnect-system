@@ -15,7 +15,7 @@ const createTransporter = async () => {
         pass: process.env.EMAIL_PASS,
       },
     });
-    console.log("Mailer: Gmail →", process.env.EMAIL_USER);
+
   } else {
     const testAccount = await nodemailer.createTestAccount();
     transporter = nodemailer.createTransport({
@@ -24,7 +24,7 @@ const createTransporter = async () => {
       secure: false,
       auth: { user: testAccount.user, pass: testAccount.pass },
     });
-    console.log("Mailer: Ethereal (dev) →", testAccount.user);
+
   }
 
   return transporter;
@@ -67,6 +67,7 @@ export const sendOtpEmail = async (email, otp) => {
 
 //ResetLink for Forgot password
 export const sendResetEmail = async (toEmail, resetLink) => {
+  const transport = await createTransporter(); 
   const mailOptions = {
     from: `"PetConnect" <${process.env.EMAIL_USER}>`,
     to: toEmail,
@@ -74,7 +75,16 @@ export const sendResetEmail = async (toEmail, resetLink) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; border-radius: 12px; border: 1px solid #E5E7EB;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h2 style="color: #1D4ED8;">:feet: PetConnect</h2>
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-9 h-9 text-blue-600">
+            <ellipse cx="7" cy="6" rx="1.2" ry="1.6" />
+            <ellipse cx="4.5" cy="7.5" rx="1" ry="1.4" />
+            <ellipse cx="9.5" cy="7.5" rx="1" ry="1.4" />
+            <path d="M7 10 C4 10 3 13 4.5 14.5 C5.5 15.5 8.5 15.5 9.5 14.5 C11 13 10 10 7 10Z" />
+            <ellipse cx="17" cy="4" rx="1.2" ry="1.6" />
+            <ellipse cx="14.5" cy="5.5" rx="1" ry="1.4" />
+            <ellipse cx="19.5" cy="5.5" rx="1" ry="1.4" />
+            <path d="M17 8 C14 8 13 11 14.5 12.5 C15.5 13.5 18.5 13.5 19.5 12.5 C21 11 20 8 17 8Z" />
+          </svg>
         </div>
         <h3 style="color: #111827;">Reset Your Password</h3>
         <p style="color: #6B7280;">We received a request to reset your password. Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
@@ -91,5 +101,5 @@ export const sendResetEmail = async (toEmail, resetLink) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  await transport.sendMail(mailOptions);
 };
