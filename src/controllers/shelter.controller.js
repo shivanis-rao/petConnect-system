@@ -81,6 +81,7 @@ export const createNgoShelter = async (req, res) => {
       zipcode,
       contact_email,
       contact_phone,
+      owner_id: req.user.id,
     });
 
     const ngoDetails = await ShelterNgoDetails.create({
