@@ -1,49 +1,159 @@
 import db from "../../models/index.js";
+import { v2 as cloudinary } from "cloudinary";
 
-const { Shelter } = db;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET_KEY,
+});
+
+const { Shelter, ShelterNgoDetails, ShelterFiles } = db;
 
 /*
-GET ALL SHELTERS
-GET /api/shelters
+ GET /api/shelters/:id
+ Get shelter details
 */
-export const getAllShelters = async (req, res) => {
+export const getShelterById = async (req, res) => {
   try {
-    const shelters = await Shelter.findAll({
-      where: { deleted_at: null },
-      attributes: ["id", "name", "city", "state", "type"],
-    });
+    const { id } = req.params;
 
-    return res.status(200).json({
-      total: shelters.length,
-      data: shelters,
-    });
+    const shelter = await Shelter.findByPk(id);
+
+    if (!shelter) {
+      return res.status(404).json({
+        message: "Shelter not found",
+      });
+    }
+
+    res.json(shelter);
   } catch (error) {
-    return res.status(500).json({
-      error: "Failed to fetch shelters",
-      details: error.message,
+    console.error(error);
+    res.status(500).json({
+      message: "Internal server error",
     });
   }
 };
 
-/*
-GET SHELTER BY ID
-GET /api/shelters/:id
-*/
-export const getShelterById = async (req, res) => {
+export const createNgoShelter = async (req, res) => {
   try {
-    const shelter = await Shelter.findByPk(req.params.id, {
-      attributes: ["id", "name", "city", "state", "type", "contact_email"],
-    });
+    const {
+      name,
+      type,
+      registration_type,
+      registration_number,
+      year_of_registration,
+      city,
+      state,
+      country,
+      zipcode,
+      contact_email,
+      contact_phone,
+    } = req.body;
 
-    if (!shelter) {
-      return res.status(404).json({ error: "Shelter not found" });
+    if (
+      !name ||
+      !type ||
+      !registration_type ||
+      !registration_number ||
+      !year_of_registration ||
+      !city ||
+      !state ||
+      !country ||
+      !zipcode ||
+      !contact_email ||
+      !contact_phone
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    return res.status(200).json({ data: shelter });
-  } catch (error) {
-    return res.status(500).json({
-      error: "Failed to fetch shelter",
-      details: error.message,
+    if (!req.files?.registration_certificate) {
+      return res
+        .status(400)
+        .json({ message: "Registration certificate is required" });
+    }
+    // Check if user already has a shelter
+const existingShelter = await Shelter.findOne({ 
+  where: { owner_id: req.user.id } 
+});
+
+if (existingShelter) {
+  return res.status(409).json({ 
+    message: "You already have a shelter registered" 
+  });
+}
+
+    const shelter = await Shelter.create({
+      name,
+      type,
+      city,
+      state,
+      country,
+      zipcode,
+      contact_email,
+      contact_phone,
+      owner_id: req.user.id,
     });
+
+    const ngoDetails = await ShelterNgoDetails.create({
+      shelter_id: shelter.id,
+      registration_type,
+      registration_number,
+      year_of_registration,
+    });
+
+    const moveFile = async (oldPublicId, resourceType = "image") => {
+      const newPublicId = oldPublicId.replace(
+        /shelters\/temp_\d+/,
+        `shelters/shelter_${shelter.id}`,
+      );
+
+      await cloudinary.uploader.rename(oldPublicId, newPublicId, {
+        resource_type: resourceType,
+      });
+
+      return newPublicId;
+    };
+
+    const fileRecords = [];
+
+    const certFile = req.files.registration_certificate[0];
+
+    const certResourceType =
+      certFile.mimetype === "application/pdf" ? "raw" : "image";
+    const newCertPublicId = await moveFile(certFile.filename, certResourceType);
+    fileRecords.push(
+      await ShelterFiles.create({
+        shelter_id: shelter.id,
+        file_url: certFile.path.replace(certFile.filename, newCertPublicId),
+        public_id: newCertPublicId,
+        file_type: "registration_certificate",
+      }),
+    );
+
+    if (req.files?.additional_document) {
+      for (const file of req.files.additional_document) {
+        const resourceType =
+          file.mimetype === "application/pdf" ? "raw" : "image";
+        const newPublicId = await moveFile(file.filename, resourceType);
+        fileRecords.push(
+          await ShelterFiles.create({
+            shelter_id: shelter.id,
+            file_url: file.path.replace(file.filename, newPublicId),
+            public_id: newPublicId,
+            file_type: "additional_document",
+          }),
+        );
+      }
+    }
+
+    res.status(201).json({
+      message: "NGO shelter registered successfully",
+      shelter_id: shelter.id,
+      ngo_details: ngoDetails,
+      files: fileRecords,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
