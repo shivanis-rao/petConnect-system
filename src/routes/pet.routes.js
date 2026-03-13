@@ -11,8 +11,6 @@ import {
 } from "../controllers/pet.controller.js";
 
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { authorize } from "../middlewares/rbac.middleware.js";
-import ROLES from "../middlewares/roles.js";
 
 const router = express.Router();
 
