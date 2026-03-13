@@ -7,6 +7,7 @@ import {
   updateProfile,
   refreshToken,
 } from "../controllers/user.controller.js";
+
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import {
   forgotPassword,

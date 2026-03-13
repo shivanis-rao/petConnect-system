@@ -71,6 +71,16 @@ export const createNgoShelter = async (req, res) => {
         .status(400)
         .json({ message: "Registration certificate is required" });
     }
+    // Check if user already has a shelter
+const existingShelter = await Shelter.findOne({ 
+  where: { owner_id: req.user.id } 
+});
+
+if (existingShelter) {
+  return res.status(409).json({ 
+    message: "You already have a shelter registered" 
+  });
+}
 
     const shelter = await Shelter.create({
       name,
