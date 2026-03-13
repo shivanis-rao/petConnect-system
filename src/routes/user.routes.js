@@ -17,13 +17,13 @@ import { forgotPassword, resetPassword } from "../controllers/Passwordreset.cont
 const router = express.Router();
 
 //  Public (no auth needed) 
-router.post("/send-otp",        sendOtp);
-router.post("/verify-otp",      verifyOtp);
-router.post("/register",        createUser);
-router.post("/login",           loginUser);
-router.post("/refresh-token",   refreshToken);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password",  resetPassword);
+router.post("/send-otp",sendOtp);
+router.post("/verify-otp",verifyOtp);
+router.post("/register",createUser);
+router.post("/login",loginUser);
+router.post("/refresh-token",refreshToken);
+router.post("/forgot-password",forgotPassword);
+router.post("/reset-password",resetPassword);
 
 // Any authenticated user 
 router.get(
