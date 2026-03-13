@@ -1,15 +1,5 @@
 import ROLES from "./roles.js";
 
-/**
- * authorize(...roles)
- *
- * Runs AFTER authMiddleware — req.user already has { id, email, role, shelter? }
- *
- * authorize()                              → any authenticated user
- * authorize(ROLES.ADMIN)                   → admin only
- * authorize(ROLES.SHELTER, ROLES.ADMIN)    → shelter or admin
- * authorize(ROLES.ADOPTER)                 → adopter only
- */
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -36,15 +26,7 @@ export const authorize = (...allowedRoles) => {
   };
 };
 
-/**
- * authorizeShelterOwner
- *
- * Uses req.user.shelter.id (already attached by YOUR authMiddleware)
- * to verify the logged-in shelter owns the shelter being accessed.
- * Admin always bypasses.
- *
- * router.put("/:shelterId", authMiddleware, authorizeShelterOwner(), updateShelter)
- */
+
 export const authorizeShelterOwner = () => {
   return (req, res, next) => {
     if (!req.user) {
