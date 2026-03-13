@@ -9,10 +9,10 @@ import {
   refreshToken,
 } from "../controllers/user.controller.js";
 
-import { authMiddleware }                      from "../middlewares/auth.middleware.js";
-import { authorize, authorizeOwnerOrAdmin }    from "../middlewares/rbac.middleware.js";
-import ROLES                                   from "../middlewares/roles.js";
-import { forgotPassword, resetPassword }       from "../controllers/Passwordreset.controller.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { authorize, authorizeOwnerOrAdmin } from "../middlewares/rbac.middleware.js";
+import ROLES from "../middlewares/roles.js";
+import { forgotPassword, resetPassword } from "../controllers/Passwordreset.controller.js";
 
 const router = express.Router();
 
