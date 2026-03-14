@@ -131,6 +131,48 @@ const getMyApplications = async (req, res) => {
   }
 };
 
+// GET /adoption/:applicationId
+const getApplicationById = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const userId = req.user.id;
+
+    const application = await AdoptionApplication.findByPk(applicationId, {
+      include: [
+       { 
+        model: Pet, 
+        as: 'pet', 
+        attributes: ['id', 'name', 'species', 'breed', 'age', 'gender', 'vaccinated', 'sterilized', 'health_status', 'temperament', 'adoption_fee', 'status'] 
+        },
+        { 
+      model: Shelter, 
+      as: 'shelter', 
+      attributes: ['id', 'name', 'contact_email', 'contact_phone', 'city', 'state', 'country'] 
+      },
+      ],
+    });
+
+    if (!application) 
+      return res.status(404).json({ message: 'Application not found' });
+
+    // Only the applicant themselves can view their application
+    if (application.userId !== userId)
+      return res.status(403).json({ message: 'Unauthorized' });
+
+    // Hide shelter info until shelter approves (stage 2+)
+    const shelterVisibleStatuses = ['approved', 'home_visit', 'completed'];
+    const data = application.toJSON();
+    if (!shelterVisibleStatuses.includes(data.status)) {
+      data.shelter = null;
+    }
+
+    return res.status(200).json({ message: 'Application fetched successfully', data });
+  } catch (error) {
+    console.error('Error fetching application:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // GET /adoption/shelter/:shelterId
 const getApplicationsForShelter = async (req, res) => {
   try {
@@ -161,7 +203,7 @@ const updateApplicationStatus = async (req, res) => {
     const { applicationId } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['pending', 'approved', 'rejected'];
+    const validStatuses = ['pending', 'approved', 'home_visit','completed','rejected'];
     if (!validStatuses.includes(status))
       return res.status(400).json({ message: 'Invalid status value' });
 
@@ -182,6 +224,7 @@ export {
   getAdopterPrefillData,
   submitAdoptionApplication,
   getMyApplications,
+  getApplicationById,
   getApplicationsForShelter,
   updateApplicationStatus,
 };
