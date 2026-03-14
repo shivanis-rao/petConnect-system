@@ -9,6 +9,7 @@ import {
   getMyApplications,
   getApplicationsForShelter,
   updateApplicationStatus,
+  getApplicationById,
 } from '../controllers/Adoption.controller.js';
 
 
@@ -18,11 +19,11 @@ router.use(authMiddleware);
 // GET /adoption/prefill — fetch logged-in user's auto-fill data (name, phone, email, experience)
 router.get('/prefill', getAdopterPrefillData);
 
-// GET /adoption/my-applications — user sees their own applications
-router.get('/my-applications', getMyApplications);
-
 // POST /adoption/apply/:petId — user submits adoption application
 router.post('/apply/:petId', submitAdoptionApplication);
+
+// GET /adoption/my-applications — user sees their own applications
+router.get('/my-applications', getMyApplications);
 
 // GET /adoption/shelter/:shelterId — NGO/shelter views applications for their pets
 router.get(
@@ -37,5 +38,7 @@ router.patch(
   authorize([ROLES.NGO, ROLES.ADMIN]),
   updateApplicationStatus
 );
+
+router.get('/:applicationId', getApplicationById);
 
 export default router;
