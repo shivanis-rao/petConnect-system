@@ -1,18 +1,20 @@
 import express from "express";
 
 import {
-  getAllShelters,
+  // getAllShelters,
   getShelterById,
 } from "../controllers/shelter.controller.js";
 
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import * as shelterController from "../controllers/shelter.controller.js";
+import upload from "../middlewares/upload.js";
 import { authorize, authorizeShelterOwner } from "../middlewares/rbac.middleware.js";
 import ROLES from "../middlewares/roles.js";
 
 const router = express.Router();
 
 // Public 
-router.get("/",    getAllShelters);
+// router.get("/",    getAllShelters);
 router.get("/:id", getShelterById);
 
 // Shelter owner + Admin
@@ -52,10 +54,8 @@ router.get("/:id", getShelterById);
 //   deleteShelter
 // );
 
-import * as shelterController from "../controllers/shelter.controller.js";
-import upload from "../middlewares/upload.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-const router = express.Router();
+
+
 
 // Get shelter by ID(optional)
 router.get("/:id", shelterController.getShelterById);

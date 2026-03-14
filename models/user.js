@@ -2,7 +2,11 @@ import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
   class User extends Model {
-    static associate(models) {} // ✅ from main
+    static associate(models) {
+      User.hasMany(models.AdoptionApplication, { 
+        foreignKey: 'userId', 
+        as: 'adoptionApplications' });
+    } 
   }
 
   User.init(
