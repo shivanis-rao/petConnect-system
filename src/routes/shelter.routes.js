@@ -1,15 +1,15 @@
 import express from "express";
+import * as shelterController from "../controllers/shelter.controller.js";
+import upload from "../middlewares/upload.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { authorize, authorizeShelterOwner } from "../middlewares/rbac.middleware.js";
+import ROLES from "../middlewares/roles.js";
 
 import {
   // getAllShelters,
   getShelterById,
 } from "../controllers/shelter.controller.js";
 
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import * as shelterController from "../controllers/shelter.controller.js";
-import upload from "../middlewares/upload.js";
-import { authorize, authorizeShelterOwner } from "../middlewares/rbac.middleware.js";
-import ROLES from "../middlewares/roles.js";
 
 const router = express.Router();
 
