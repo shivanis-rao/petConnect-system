@@ -20,6 +20,10 @@ export default (sequelize, DataTypes) => {
         foreignKey: "updated_by",
         as: "updater",
       });
+      Pet.hasMany(models.AdoptionApplication, {
+        foreignKey: "petId",
+        as: "adoptionApplications",
+      });
     }
   }
 

@@ -77,6 +77,10 @@ export default (sequelize, DataTypes) => {
       foreignKey: "shelter_id",
       as: "pets",
     });
+    Shelter.hasMany(models.AdoptionApplication, { 
+      foreignKey: 'shelterId', 
+      as: 'adoptionApplications' 
+    });
   };
 
   return Shelter;

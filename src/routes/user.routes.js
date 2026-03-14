@@ -16,14 +16,12 @@ import {
 
 const router = express.Router();
 
-// AUTH ROUTES
-router.post("/register", createUser);
+//  Public (no auth needed)
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
+router.post("/register", createUser);
 router.post("/login", loginUser);
 router.post("/refresh-token", refreshToken);
-
-// PASSWORD RESET ROUTES
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 

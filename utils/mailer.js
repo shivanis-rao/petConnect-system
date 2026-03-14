@@ -100,3 +100,119 @@ export const sendResetEmail = async (toEmail, resetLink) => {
 
   await transport.sendMail(mailOptions);
 };
+
+export const sendAdoptionRequestToShelter = async ({
+  shelterEmail,
+  shelterName,
+  applicantFirstName,
+  applicantLastName,
+  applicantEmail,
+  applicantPhone,
+  petName,
+  petSpecies,
+  petBreed,
+  currentOccupation,
+  address,
+  livingArrangement,
+  familyAgreement,
+  landlordAllowsPets,
+  petCareWhenAway,
+  petExperienceYears,
+  applicationId,
+}) => {
+  const transport = await createTransporter();
+
+  const info = await transport.sendMail({
+    from: `"PetConnect" <${process.env.EMAIL_USER || "no-reply@petconnect.com"}>`,
+    to: shelterEmail,
+    subject: `🐾 New Adoption Application for ${petName} — ${applicantFirstName} ${applicantLastName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <div style="background-color: #4A90D9; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">🐾 New Adoption Application</h1>
+        </div>
+        <div style="padding: 24px;">
+          <p>Hello <strong>${shelterName}</strong>,</p>
+          <p>You have received a new adoption application for <strong>${petName}</strong> (${petSpecies} - ${petBreed}).</p>
+          <hr style="border: 1px solid #f0f0f0; margin: 20px 0;" />
+ 
+          <h2 style="color: #4A90D9;">👤 Applicant Details</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold; width: 40%;">Full Name</td><td style="padding: 8px;">${applicantFirstName} ${applicantLastName}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding: 8px; font-weight: bold;">Email</td><td style="padding: 8px;"><a href="mailto:${applicantEmail}">${applicantEmail}</a></td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Phone</td><td style="padding: 8px;">${applicantPhone}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding: 8px; font-weight: bold;">Pet Experience</td><td style="padding: 8px;">${petExperienceYears} year(s)</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Occupation</td><td style="padding: 8px;">${currentOccupation}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding: 8px; font-weight: bold;">Address</td><td style="padding: 8px;">${address}</td></tr>
+          </table>
+ 
+          <hr style="border: 1px solid #f0f0f0; margin: 20px 0;" />
+          <h2 style="color: #4A90D9;">🏠 Lifestyle Details</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold; width: 40%;">Living Arrangement</td><td style="padding: 8px;">${livingArrangement}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding: 8px; font-weight: bold;">Family Agreement</td><td style="padding: 8px;">${familyAgreement}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Landlord Allows Pets</td><td style="padding: 8px;">${landlordAllowsPets}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding: 8px; font-weight: bold;">Pet Care When Away</td><td style="padding: 8px;">${petCareWhenAway}</td></tr>
+          </table>
+ 
+          <hr style="border: 1px solid #f0f0f0; margin: 20px 0;" />
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${process.env.FRONTEND_URL}/shelter/applications"
+              style="background-color: #4A90D9; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-size: 16px; font-weight: bold;">
+              View Application on Dashboard
+            </a>
+          </div>
+          <p style="color: #888; font-size: 12px; text-align: center;">Application ID: #${applicationId}</p>
+        </div>
+      </div>
+    `,
+  });
+
+  const previewUrl = nodemailer.getTestMessageUrl(info);
+  if (previewUrl) console.log("Shelter email preview:", previewUrl);
+};
+
+// Send confirmation email to applicant
+export const sendAdoptionConfirmationToApplicant = async ({
+  applicantEmail,
+  applicantFirstName,
+  petName,
+  shelterName,
+  applicationId,
+}) => {
+  const transport = await createTransporter();
+
+  const info = await transport.sendMail({
+    from: `"PetConnect" <${process.env.EMAIL_USER || "no-reply@petconnect.com"}>`,
+    to: applicantEmail,
+    subject: `✅ Your Adoption Application for ${petName} has been received!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <div style="background-color: #4A90D9; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">🐾 Application Received!</h1>
+        </div>
+        <div style="padding: 24px;">
+          <p>Hi <strong>${applicantFirstName}</strong>,</p>
+          <p>Your adoption application for <strong>${petName}</strong> has been successfully submitted to <strong>${shelterName}</strong>.</p>
+          <p>The shelter will review your application and get back to you soon.</p>
+ 
+          <div style="background-color: #f0f7ff; padding: 16px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Application ID:</strong> #${applicationId}</p>
+            <p style="margin: 8px 0 0;"><strong>Status:</strong> Pending Review</p>
+          </div>
+ 
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${process.env.FRONTEND_URL}/my-applications"
+              style="background-color: #4A90D9; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-size: 16px; font-weight: bold;">
+              View My Applications
+            </a>
+          </div>
+          <p style="color: #888; font-size: 12px; text-align: center;">This is an automated email from PetConnect.</p>
+        </div>
+      </div>
+    `,
+  });
+
+  const previewUrl = nodemailer.getTestMessageUrl(info);
+  if (previewUrl) console.log("Applicant email preview:", previewUrl);
+};
