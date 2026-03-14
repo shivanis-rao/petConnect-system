@@ -11,44 +11,30 @@ const __dirname = path.dirname(__filename);
 
 const db = {};
 
+// Determine environment
+const env = process.env.NODE_ENV || "development";
 
-const required = ["DB_USERNAME", "DB_PASSWORD", "DB_NAME", "DB_HOST"];
-for (const key of required) {
-  if (!process.env[key]) {
-    console.error(` Missing required env variable: ${key}`);
-    process.exit(1);
-  }
-}
+// Build config from env variables
+const config = {
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  host: process.env.DB_HOST,
+  dialect: process.env.DB_DIALECT || "postgres",
+};
 
+// Initialize Sequelize
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USERNAME,
-  process.env.DB_PASSWORD,
+  config.database,
+  config.username,
+  config.password,
   {
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || "5432"), 
-    dialect: process.env.DB_DIALECT || "postgres",
-
-   // logging: (msg) => console.log(" SQL:", msg), //  See every query — remove in production
-
-    
-    pool: {
-      max: 10,        // max connections in pool
-      min: 0,         // min connections in pool
-      acquire: 30000, // max ms to wait for connection before throwing error
-      idle: 10000,    // ms before idle connection is released
-    },
-
-    dialectOptions: {
-      
-      statement_timeout: 10000,
-      
-      lock_timeout: 5000,
-    },
-  }
+    host: config.host,
+    dialect: config.dialect,
+  },
 );
 
-
+// Dynamically import models
 const modelFiles = fs
   .readdirSync(__dirname)
   .filter(
@@ -65,7 +51,6 @@ for (const file of modelFiles) {
   const model = modelModule.default(sequelize, Sequelize.DataTypes);
   db[model.name] = model;
 }
-
 
 for (const modelName of Object.keys(db)) {
   if (db[modelName].associate) {

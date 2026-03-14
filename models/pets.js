@@ -3,7 +3,6 @@ import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
   class Pet extends Model {
     static associate(models) {
-
       // Shelter relation
       Pet.belongsTo(models.Shelter, {
         foreignKey: "shelter_id",
@@ -21,11 +20,10 @@ export default (sequelize, DataTypes) => {
         foreignKey: "updated_by",
         as: "updater",
       });
-      Pet.hasMany(models.AdoptionApplication, { 
-        foreignKey: 'petId', 
-        as: 'adoptionApplications' 
+      Pet.hasMany(models.AdoptionApplication, {
+        foreignKey: "petId",
+        as: "adoptionApplications",
       });
-
     }
   }
 
@@ -47,11 +45,7 @@ export default (sequelize, DataTypes) => {
       },
 
       sterilized: {
-        type: DataTypes.ENUM(
-          "not_sterilized",
-          "neutered",
-          "spayed"
-        ),
+        type: DataTypes.ENUM("not_sterilized", "neutered", "spayed"),
       },
 
       special_needs: {
@@ -68,12 +62,7 @@ export default (sequelize, DataTypes) => {
       adoption_fee: DataTypes.INTEGER,
 
       status: {
-        type: DataTypes.ENUM(
-          "Available",
-          "Reserved",
-          "Adopted",
-          "OnHold"
-        ),
+        type: DataTypes.ENUM("Available", "Reserved", "Adopted", "OnHold"),
         defaultValue: "Available",
       },
 
@@ -93,12 +82,12 @@ export default (sequelize, DataTypes) => {
     },
     {
       sequelize,
-  modelName: "Pet",
-  tableName: "pets",
-  timestamps: true,
-  createdAt: "created_at",
-  updatedAt: "updated_at"
-    }
+      modelName: "Pet",
+      tableName: "pets",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
   );
 
   return Pet;

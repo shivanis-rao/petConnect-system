@@ -1,21 +1,20 @@
-'use strict';
+"use strict";
 
 export default {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('pets', {
-
+    await queryInterface.createTable("pets", {
       id: {
         allowNull: false,
         type: Sequelize.INTEGER,
         autoIncrement: true,
-        primaryKey: true
+        primaryKey: true,
       },
 
       name: Sequelize.STRING,
 
       species: {
         type: Sequelize.STRING,
-        comment: "dog|cat"
+        comment: "dog|cat",
       },
 
       breed: Sequelize.STRING,
@@ -24,25 +23,21 @@ export default {
 
       gender: {
         type: Sequelize.STRING,
-        comment: "male|female"
+        comment: "male|female",
       },
 
       vaccinated: {
         type: Sequelize.BOOLEAN,
-        defaultValue: false
+        defaultValue: false,
       },
 
       sterilized: {
-        type: Sequelize.ENUM(
-          "not_sterilized",
-          "neutered",
-          "spayed"
-        )
+        type: Sequelize.ENUM("not_sterilized", "neutered", "spayed"),
       },
 
       special_needs: {
         type: Sequelize.BOOLEAN,
-        defaultValue: false
+        defaultValue: false,
       },
 
       health_status: Sequelize.TEXT,
@@ -52,13 +47,8 @@ export default {
       adoption_fee: Sequelize.INTEGER,
 
       status: {
-        type: Sequelize.ENUM(
-          "Available",
-          "Reserved",
-          "Adopted",
-          "OnHold"
-        ),
-        defaultValue: "Available"
+        type: Sequelize.ENUM("Available", "Reserved", "Adopted", "OnHold"),
+        defaultValue: "Available",
       },
 
       good_with_kids: Sequelize.BOOLEAN,
@@ -68,10 +58,10 @@ export default {
         allowNull: false,
         references: {
           model: "shelter",
-          key: "id"
+          key: "id",
         },
         onUpdate: "CASCADE",
-        onDelete: "CASCADE"
+        onDelete: "CASCADE",
       },
 
       listed_at: Sequelize.DATE,
@@ -82,38 +72,37 @@ export default {
         type: Sequelize.INTEGER,
         references: {
           model: "users",
-          key: "id"
+          key: "id",
         },
         onUpdate: "CASCADE",
-        onDelete: "SET NULL"
+        onDelete: "SET NULL",
       },
 
       updated_by: {
         type: Sequelize.INTEGER,
         references: {
           model: "users",
-          key: "id"
+          key: "id",
         },
         onUpdate: "CASCADE",
-        onDelete: "SET NULL"
+        onDelete: "SET NULL",
       },
 
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.NOW
+        defaultValue: Sequelize.NOW,
       },
 
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.NOW
-      }
-
+        defaultValue: Sequelize.NOW,
+      },
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('pets');
-  }
+    await queryInterface.dropTable("pets");
+  },
 };

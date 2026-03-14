@@ -15,7 +15,6 @@ const createTransporter = async () => {
         pass: process.env.EMAIL_PASS,
       },
     });
-
   } else {
     const testAccount = await nodemailer.createTestAccount();
     transporter = nodemailer.createTransport({
@@ -24,7 +23,6 @@ const createTransporter = async () => {
       secure: false,
       auth: { user: testAccount.user, pass: testAccount.pass },
     });
-
   }
 
   return transporter;
@@ -39,7 +37,7 @@ export const sendOtpEmail = async (email, otp) => {
       to: email,
       subject: "Your OTP Code - PetConnect",
       text: `Your PetConnect OTP is: ${otp}. Valid for 10 minutes. Do not share it.`,
-      
+
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
           <h2 style="color: #06b6d4;">🐾 PetConnect</h2>
@@ -58,7 +56,6 @@ export const sendOtpEmail = async (email, otp) => {
     }
 
     return previewUrl || false;
-
   } catch (error) {
     console.error("sendOtpEmail failed:", error.message);
     throw new Error("Failed to send OTP email. Please try again.");
@@ -67,7 +64,7 @@ export const sendOtpEmail = async (email, otp) => {
 
 //ResetLink for Forgot password
 export const sendResetEmail = async (toEmail, resetLink) => {
-  const transport = await createTransporter(); 
+  const transport = await createTransporter();
   const mailOptions = {
     from: `"PetConnect" <${process.env.EMAIL_USER}>`,
     to: toEmail,
@@ -124,7 +121,7 @@ export const sendAdoptionRequestToShelter = async ({
   applicationId,
 }) => {
   const transport = await createTransporter();
- 
+
   const info = await transport.sendMail({
     from: `"PetConnect" <${process.env.EMAIL_USER || "no-reply@petconnect.com"}>`,
     to: shelterEmail,
@@ -170,11 +167,11 @@ export const sendAdoptionRequestToShelter = async ({
       </div>
     `,
   });
- 
+
   const previewUrl = nodemailer.getTestMessageUrl(info);
   if (previewUrl) console.log("Shelter email preview:", previewUrl);
 };
- 
+
 // Send confirmation email to applicant
 export const sendAdoptionConfirmationToApplicant = async ({
   applicantEmail,
@@ -184,7 +181,7 @@ export const sendAdoptionConfirmationToApplicant = async ({
   applicationId,
 }) => {
   const transport = await createTransporter();
- 
+
   const info = await transport.sendMail({
     from: `"PetConnect" <${process.env.EMAIL_USER || "no-reply@petconnect.com"}>`,
     to: applicantEmail,
@@ -215,7 +212,7 @@ export const sendAdoptionConfirmationToApplicant = async ({
       </div>
     `,
   });
- 
+
   const previewUrl = nodemailer.getTestMessageUrl(info);
   if (previewUrl) console.log("Applicant email preview:", previewUrl);
 };

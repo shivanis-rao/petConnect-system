@@ -2,20 +2,10 @@ import express from "express";
 import * as shelterController from "../controllers/shelter.controller.js";
 import upload from "../middlewares/upload.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { authorize, authorizeShelterOwner } from "../middlewares/rbac.middleware.js";
-import ROLES from "../middlewares/roles.js";
-
-import {
-  // getAllShelters,
-  getShelterById,
-} from "../controllers/shelter.controller.js";
-
+// import { authorize, authorizeShelterOwner } from "../middlewares/rbac.middleware.js";
+// import ROLES from "../middlewares/roles.js";
 
 const router = express.Router();
-
-// Public 
-// router.get("/",    getAllShelters);
-router.get("/:id", getShelterById);
 
 // Shelter owner + Admin
 // Add these when you build the shelter update/file controllers
@@ -39,7 +29,7 @@ router.get("/:id", getShelterById);
 //   uploadShelterFiles
 // );
 
-// Admin only 
+// Admin only
 // router.patch(
 //   "/:shelterId/verify",
 //   authMiddleware,
@@ -54,15 +44,14 @@ router.get("/:id", getShelterById);
 //   deleteShelter
 // );
 
-
-
-
+// Public
+// router.get("/",  shelterController.getAllShelters);
 // Get shelter by ID(optional)
 router.get("/:id", shelterController.getShelterById);
 
 router.post(
   "/ngo_register",
-   authMiddleware,  
+  authMiddleware,
   upload.fields([
     { name: "registration_certificate", maxCount: 1 },
     { name: "additional_document", maxCount: 5 },

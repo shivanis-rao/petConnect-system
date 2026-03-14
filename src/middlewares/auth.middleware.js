@@ -10,7 +10,7 @@ export const authMiddleware = async (req, res, next) => {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "Authorization token missing"
+        message: "Authorization token missing",
       });
     }
 
@@ -25,7 +25,7 @@ export const authMiddleware = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
@@ -33,7 +33,7 @@ export const authMiddleware = async (req, res, next) => {
     req.user = {
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
     };
 
     // Attach shelter info if role is shelter
@@ -53,6 +53,8 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "Invalid token" });
     }
     console.error("Auth Middleware Error:", error);
-    return res.status(500).json({ success: false, message: "Authentication failed" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Authentication failed" });
   }
 };
