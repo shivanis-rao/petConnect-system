@@ -55,6 +55,8 @@ router.get("/:id", getShelterById);
 // );
 
 
+
+
 // Get shelter by ID(optional)
 router.get("/:id", shelterController.getShelterById);
 

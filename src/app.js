@@ -6,7 +6,7 @@ import userRoutes from "./routes/user.routes.js";
 import shelterRoutes from "./routes/shelter.routes.js";
 import petRoutes from "./routes/pet.routes.js";
 import { browsePets } from "./controllers/pet.controller.js";
-import adoptionRoutes from './routes/adoptionRequest.routes.js';
+import adoptionRoutes from "./routes/adoption.routes.js";
 
 const app = express();
 app.use(cors({origin:"http://localhost:5173"}));
@@ -16,6 +16,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/shelters", shelterRoutes);
 app.use("/api/shelter/pets", petRoutes);
 app.get("/api/pets/browse", browsePets);
-app.use('/api/adoptions', adoptionRoutes);
+app.use("/api/adoption",adoptionRoutes);
 
 export default app;
