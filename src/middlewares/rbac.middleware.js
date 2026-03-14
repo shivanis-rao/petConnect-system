@@ -26,7 +26,6 @@ export const authorize = (...allowedRoles) => {
   };
 };
 
-
 export const authorizeShelterOwner = () => {
   return (req, res, next) => {
     if (!req.user) {
@@ -82,7 +81,7 @@ export const authorizeShelterOwner = () => {
  *   authorizeOwnerOrAdmin((req) => req.params.userId), handler)
  */
 export const authorizeOwnerOrAdmin = (
-  ownerIdExtractor = (req) => req.params.id
+  ownerIdExtractor = (req) => req.params.id,
 ) => {
   return (req, res, next) => {
     if (!req.user) {

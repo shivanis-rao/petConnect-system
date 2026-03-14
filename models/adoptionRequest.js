@@ -1,6 +1,6 @@
 export default (sequelize, DataTypes) => {
   const AdoptionRequest = sequelize.define(
-    'AdoptionRequest',
+    "AdoptionRequest",
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       pet_id: { type: DataTypes.INTEGER, allowNull: false },
@@ -18,8 +18,15 @@ export default (sequelize, DataTypes) => {
       interview_scheduled_at: { type: DataTypes.DATE },
       home_visit_scheduled_at: { type: DataTypes.DATE },
       status: {
-        type: DataTypes.ENUM('Pending','Interviewing','HomeVisit','Approved','Rejected','Withdrawn'),
-        defaultValue: 'Pending',
+        type: DataTypes.ENUM(
+          "Pending",
+          "Interviewing",
+          "HomeVisit",
+          "Approved",
+          "Rejected",
+          "Withdrawn",
+        ),
+        defaultValue: "Pending",
       },
       reviewed_by: { type: DataTypes.INTEGER },
       reviewed_at: { type: DataTypes.DATE },
@@ -28,16 +35,22 @@ export default (sequelize, DataTypes) => {
       deleted_at: { type: DataTypes.DATE },
     },
     {
-      tableName: 'adoption_requests',
+      tableName: "adoption_requests",
       underscored: true,
       paranoid: true,
-    }
+    },
   );
 
   AdoptionRequest.associate = (models) => {
-    AdoptionRequest.belongsTo(models.Pet, { foreignKey: 'pet_id', as: 'pet' });
-    AdoptionRequest.belongsTo(models.User, { foreignKey: 'adopter_id', as: 'adopter' });
-    AdoptionRequest.belongsTo(models.Shelter, { foreignKey: 'shelter_id', as: 'shelter' });
+    AdoptionRequest.belongsTo(models.Pet, { foreignKey: "pet_id", as: "pet" });
+    AdoptionRequest.belongsTo(models.User, {
+      foreignKey: "adopter_id",
+      as: "adopter",
+    });
+    AdoptionRequest.belongsTo(models.Shelter, {
+      foreignKey: "shelter_id",
+      as: "shelter",
+    });
   };
 
   return AdoptionRequest;
