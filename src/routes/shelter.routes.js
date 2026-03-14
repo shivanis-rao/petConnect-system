@@ -1,17 +1,17 @@
 import express from "express";
 
-import {
-  getAllShelters,
-  getShelterById,
-} from "../controllers/shelter.controller.js";
+// import {
+//   getAllShelters,
+//   getShelterById,
+// } from "../controllers/shelter.controller.js";
 
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 // import { authorize, authorizeShelterOwner } from "../middlewares/rbac.middleware.js";
 // import ROLES from "../middlewares/roles.js";
 
 // Public
-router.get("/", getAllShelters);
-router.get("/:id", getShelterById);
+// router.get("/", getAllShelters);
+// router.get("/:id", getShelterById);
 
 // Shelter owner + Admin
 // Add these when you build the shelter update/file controllers
