@@ -37,11 +37,16 @@ export const getMyConversations = async (req, res) => {
   try {
     const user = req.user;
     const where = user.role === 'shelter'
+    
       ? { shelter_id: user.shelter?.id }
       : { adopter_id: user.id };
+      console.log('user role:', user.role);
+    console.log('user.shelter:', user.shelter);
+     console.log('where:', where);
 
     const conversations = await Conversation.findAll({
       where,
+      
       include: [
         {
           model: Pet,
@@ -62,6 +67,7 @@ export const getMyConversations = async (req, res) => {
         },
       ],
       order: [['last_message_at', 'DESC']],
+      
     });
 
     // Hide adopter identity if anonymous (for shelter view)

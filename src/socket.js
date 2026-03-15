@@ -50,8 +50,9 @@ export const initSocket = async (httpServer) => {
     socket.join(`user_${socket.user.id}`);
 
     // Join conversation room
-    socket.on('join_conversation', async (conversationId) => {
-      const conversation = await Conversation.findByPk(conversationId);
+    socket.on('join_conversation', async (data) => {
+       const conversationId = typeof data === 'object' ? data.conversation_id : parseInt(data);
+       const conversation = await Conversation.findByPk(conversationId);
       if (!conversation) return;
 
       // Only allow adopter or shelter member to join
@@ -83,9 +84,11 @@ export const initSocket = async (httpServer) => {
     });
 
     // Send message
-    socket.on('send_message', async (data) => {
-      try {
-        const { conversation_id, content, file_url, file_type } = data;
+  socket.on('send_message', async (data) => {
+  console.log('send_message received:', data);
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    const { conversation_id, content, file_url, file_type } = parsed;
 
         const conversation = await Conversation.findByPk(conversation_id);
         if (!conversation) return;
@@ -119,21 +122,25 @@ export const initSocket = async (httpServer) => {
             };
 
         const payload = {
-          id: message.id,
-          conversation_id,
-          content,
-          file_url: file_url || null,
-          file_type: file_type || null,
-          sender: senderInfo,
-          is_read: false,
-          createdAt: message.createdAt,
-        };
+        id: message.id,
+        conversation_id,
+        sender_id: socket.user.id,
+        content,
+        file_url: file_url || null,
+        file_type: file_type || null,
+        sender: senderInfo,
+        is_read: false,
+        createdAt: message.createdAt,
+    };
 
         // Publish to Redis
         await pub.publish('messages', JSON.stringify(payload));
 
-        // Broadcast to conversation room
-        io.to(`conversation_${conversation_id}`).emit('new_message', payload);
+       // Send to others in room (not sender)
+     socket.to(`conversation_${conversation_id}`).emit('new_message', payload);
+
+      // Send back to sender only once
+      socket.emit('new_message', payload);
 
       } catch (err) {
         console.error('send_message error:', err);
