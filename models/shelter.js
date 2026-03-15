@@ -78,21 +78,23 @@ export default (sequelize, DataTypes) => {
       as: "pets",
     });
 
-      Shelter.hasMany(models.ShelterFiles,{
-      foreignKey : "shelter_id",
-      as : "files",
-      }
-    );
+    Shelter.hasMany(models.ShelterFiles, {
+      foreignKey: "shelter_id",
+      as: "files",
+    });
 
     Shelter.hasOne(models.Government, {
-      foreignKey : "shelter_id",
-      as : "government_details"
-    })
-  
+      foreignKey: "shelter_id",
+      as: "government_details",
+    });
 
-    Shelter.hasMany(models.AdoptionApplication, { 
-      foreignKey: 'shelterId', 
-      as: 'adoptionApplications' 
+    Shelter.hasMany(models.AdoptionApplication, {
+      foreignKey: "shelterId",
+      as: "adoptionApplications",
+    });
+    Shelter.hasOne(models.ShelterRescuerDetails, {
+      foreignKey: "shelter_id",
+      as: "rescuer_details",
     });
   };
 

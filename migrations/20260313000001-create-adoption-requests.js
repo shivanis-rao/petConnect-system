@@ -1,5 +1,5 @@
 export async function up(queryInterface, Sequelize) {
-  await queryInterface.createTable('adoption_requests', {
+  await queryInterface.createTable("adoption_requests", {
     id: {
       type: Sequelize.INTEGER,
       primaryKey: true,
@@ -9,20 +9,20 @@ export async function up(queryInterface, Sequelize) {
     pet_id: {
       type: Sequelize.INTEGER,
       allowNull: false,
-      references: { model: 'pets', key: 'id' },
-      onDelete: 'CASCADE',
+      references: { model: "pets", key: "id" },
+      onDelete: "CASCADE",
     },
     adopter_id: {
       type: Sequelize.INTEGER,
       allowNull: false,
-      references: { model: 'users', key: 'id' },
-      onDelete: 'CASCADE',
+      references: { model: "users", key: "id" },
+      onDelete: "CASCADE",
     },
     shelter_id: {
       type: Sequelize.INTEGER,
       allowNull: false,
-      references: { model: 'shelter', key: 'id' },
-      onDelete: 'CASCADE',
+      references: { model: "shelter", key: "id" },
+      onDelete: "CASCADE",
     },
     living_condition: { type: Sequelize.STRING, allowNull: true },
     current_occupation: { type: Sequelize.STRING, allowNull: true },
@@ -36,25 +36,40 @@ export async function up(queryInterface, Sequelize) {
     interview_scheduled_at: { type: Sequelize.DATE, allowNull: true },
     home_visit_scheduled_at: { type: Sequelize.DATE, allowNull: true },
     status: {
-      type: Sequelize.ENUM('Pending','Interviewing','HomeVisit','Approved','Rejected','Withdrawn'),
+      type: Sequelize.ENUM(
+        "Pending",
+        "Interviewing",
+        "HomeVisit",
+        "Approved",
+        "Rejected",
+        "Withdrawn",
+      ),
       allowNull: false,
-      defaultValue: 'Pending',
+      defaultValue: "Pending",
     },
     reviewed_by: { type: Sequelize.INTEGER, allowNull: true },
     reviewed_at: { type: Sequelize.DATE, allowNull: true },
     approved_at: { type: Sequelize.DATE, allowNull: true },
     rejected_at: { type: Sequelize.DATE, allowNull: true },
     deleted_at: { type: Sequelize.DATE, allowNull: true },
-    created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
-    updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+    created_at: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.NOW,
+    },
+    updated_at: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.NOW,
+    },
   });
 
-  await queryInterface.addIndex('adoption_requests', ['pet_id', 'adopter_id'], {
+  await queryInterface.addIndex("adoption_requests", ["pet_id", "adopter_id"], {
     unique: true,
-    name: 'unique_pet_adopter',
+    name: "unique_pet_adopter",
   });
 }
 
 export async function down(queryInterface) {
-  await queryInterface.dropTable('adoption_requests');
+  await queryInterface.dropTable("adoption_requests");
 }

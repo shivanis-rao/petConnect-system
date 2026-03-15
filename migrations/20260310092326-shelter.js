@@ -11,7 +11,7 @@ export default {
         allowNull: false,
       },
 
-      name: {
+      organizationName: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -58,7 +58,7 @@ export default {
       },
 
       contact_phone: {
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
       },
 
       city: {
