@@ -60,15 +60,21 @@ router.post(
   shelterController.createNgoShelter,
 );
 
-router.post(
-    "/government_register",
-    upload.single("government_authorization"),
-    shelterController.createGovernmentDetails
 
-)
 
 router.post(
-    "/rescuer_register",shelterController.createShelterRescuer)
+  "/government_register",
+  authMiddleware,
+  upload.single("government_authorization"),
+  shelterController.createGovernmentDetails
+);
+
+router.post(
+  "/rescuer_register",
+  authMiddleware,
+  upload.none(),  // no file but parses FormData body
+  shelterController.createShelterRescuer
+);
 
    
 
