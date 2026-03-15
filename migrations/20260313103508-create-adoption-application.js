@@ -94,7 +94,13 @@ export default {
         comment: "Who will take care of pet during vacation/work travel?",
       },
       status: {
-        type: Sequelize.ENUM("pending", "approved", "rejected"),
+        type: Sequelize.ENUM(
+          "pending",
+          "approved",
+          "rejected",
+          "home_visit",
+          "completed",
+        ),
         allowNull: false,
         defaultValue: "pending",
       },

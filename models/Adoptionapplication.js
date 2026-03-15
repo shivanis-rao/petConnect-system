@@ -49,7 +49,13 @@ export default (sequelize, DataTypes) => {
       },
       petCareWhenAway: { type: DataTypes.TEXT, allowNull: false },
       status: {
-        type: DataTypes.ENUM("pending", "approved", "rejected"),
+        type: DataTypes.ENUM(
+          "pending",
+          "approved",
+          "rejected",
+          "home_visit",
+          "completed",
+        ),
         allowNull: false,
         defaultValue: "pending",
       },

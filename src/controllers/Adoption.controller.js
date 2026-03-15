@@ -2,6 +2,7 @@ import db from "../../models/index.js";
 import {
   sendAdoptionRequestToShelter,
   sendAdoptionConfirmationToApplicant,
+  sendStatusUpdateToApplicant,
 } from "../../utils/mailer.js"; // ← your existing mailer file
 
 const { User, Pet, Shelter, AdoptionApplication } = db;
@@ -79,7 +80,11 @@ const submitAdoptionApplication = async (req, res) => {
     if (!shelter) return res.status(404).json({ message: "Shelter not found" });
 
     const existing = await AdoptionApplication.findOne({
-      where: { userId, petId },
+      where: {
+        userId,
+        petId,
+        status: ["pending", "approved", "home_visit", "completed"],
+      },
     });
     if (existing)
       return res
@@ -174,12 +179,10 @@ const getMyApplications = async (req, res) => {
       ],
       order: [["createdAt", "DESC"]],
     });
-    return res
-      .status(200)
-      .json({
-        message: "Applications fetched successfully",
-        data: applications,
-      });
+    return res.status(200).json({
+      message: "Applications fetched successfully",
+      data: applications,
+    });
   } catch (error) {
     console.error("Error fetching applications:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -194,37 +197,60 @@ const getApplicationById = async (req, res) => {
 
     const application = await AdoptionApplication.findByPk(applicationId, {
       include: [
-       { 
-        model: Pet, 
-        as: 'pet', 
-        attributes: ['id', 'name', 'species', 'breed', 'age', 'gender', 'vaccinated', 'sterilized', 'health_status', 'temperament', 'adoption_fee', 'status'] 
+        {
+          model: Pet,
+          as: "pet",
+          attributes: [
+            "id",
+            "name",
+            "species",
+            "breed",
+            "age",
+            "gender",
+            "vaccinated",
+            "sterilized",
+            "health_status",
+            "temperament",
+            "adoption_fee",
+            "status",
+          ],
         },
-        { 
-      model: Shelter, 
-      as: 'shelter', 
-      attributes: ['id', 'name', 'contact_email', 'contact_phone', 'city', 'state', 'country'] 
-      },
+        {
+          model: Shelter,
+          as: "shelter",
+          attributes: [
+            "id",
+            "name",
+            "contact_email",
+            "contact_phone",
+            "city",
+            "state",
+            "country",
+          ],
+        },
       ],
     });
 
-    if (!application) 
-      return res.status(404).json({ message: 'Application not found' });
+    if (!application)
+      return res.status(404).json({ message: "Application not found" });
 
     // Only the applicant themselves can view their application
     if (application.userId !== userId)
-      return res.status(403).json({ message: 'Unauthorized' });
+      return res.status(403).json({ message: "Unauthorized" });
 
     // Hide shelter info until shelter approves (stage 2+)
-    const shelterVisibleStatuses = ['approved', 'home_visit', 'completed'];
+    const shelterVisibleStatuses = ["approved", "home_visit", "completed"];
     const data = application.toJSON();
     if (!shelterVisibleStatuses.includes(data.status)) {
       data.shelter = null;
     }
 
-    return res.status(200).json({ message: 'Application fetched successfully', data });
+    return res
+      .status(200)
+      .json({ message: "Application fetched successfully", data });
   } catch (error) {
-    console.error('Error fetching application:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error("Error fetching application:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -253,12 +279,10 @@ const getApplicationsForShelter = async (req, res) => {
       ],
       order: [["createdAt", "DESC"]],
     });
-    return res
-      .status(200)
-      .json({
-        message: "Shelter applications fetched successfully",
-        data: applications,
-      });
+    return res.status(200).json({
+      message: "Shelter applications fetched successfully",
+      data: applications,
+    });
   } catch (error) {
     console.error("Error fetching shelter applications:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -271,25 +295,102 @@ const updateApplicationStatus = async (req, res) => {
     const { applicationId } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['pending', 'approved', 'home_visit','completed','rejected'];
+    const validStatuses = [
+      "pending",
+      "approved",
+      "home_visit",
+      "completed",
+      "rejected",
+    ];
     if (!validStatuses.includes(status))
       return res.status(400).json({ message: "Invalid status value" });
 
-    const application = await AdoptionApplication.findByPk(applicationId);
+    const application = await AdoptionApplication.findByPk(applicationId, {
+      include: [
+        { model: Pet, as: "pet", attributes: ["id", "name"] },
+        { model: Shelter, as: "shelter", attributes: ["id", "name"] },
+      ],
+    });
+
     if (!application)
       return res.status(404).json({ message: "Application not found" });
 
     application.status = status;
     await application.save();
 
-    return res
-      .status(200)
-      .json({
-        message: `Application status updated to '${status}'`,
-        data: application,
+    // ── Send email notification to adopter ────────────────────────
+    try {
+      await sendStatusUpdateToApplicant({
+        applicantEmail: application.email,
+        applicantFirstName: application.first_name,
+        petName: application.pet?.name,
+        shelterName: application.shelter?.name,
+        status,
+        applicationId: application.id,
       });
+    } catch (emailError) {
+      console.error("Status update email failed:", emailError.message);
+    }
+
+    return res.status(200).json({
+      message: `Application status updated to '${status}'`,
+      data: application,
+    });
   } catch (error) {
     console.error("Error updating application status:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// GET /adoption/shelter/:shelterId/application/:applicationId
+const getShelterApplicationById = async (req, res) => {
+  try {
+    const { applicationId, shelterId } = req.params;
+
+    const application = await AdoptionApplication.findByPk(applicationId, {
+      include: [
+        {
+          model: Pet,
+          as: "pet",
+          attributes: [
+            "id",
+            "name",
+            "species",
+            "breed",
+            "age",
+            "gender",
+            //"image_url",
+            "vaccinated",
+            "sterilized",
+            "health_status",
+            "temperament",
+            "adoption_fee",
+            "status",
+            "special_needs",
+            "good_with_kids",
+          ],
+        },
+        {
+          model: User,
+          as: "applicant",
+          attributes: ["id", "first_name", "last_name", "email", "phone"],
+        },
+      ],
+    });
+
+    if (!application)
+      return res.status(404).json({ message: "Application not found" });
+
+    // ✅ Make sure this application belongs to this shelter
+    if (String(application.shelterId) !== String(shelterId))
+      return res.status(403).json({ message: "Unauthorized" });
+
+    return res.status(200).json({
+      message: "Application fetched successfully",
+      data: application,
+    });
+  } catch (error) {
+    console.error("Error fetching shelter application:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -301,4 +402,5 @@ export {
   getApplicationById,
   getApplicationsForShelter,
   updateApplicationStatus,
+  getShelterApplicationById,
 };

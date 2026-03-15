@@ -216,3 +216,87 @@ export const sendAdoptionConfirmationToApplicant = async ({
   const previewUrl = nodemailer.getTestMessageUrl(info);
   if (previewUrl) console.log("Applicant email preview:", previewUrl);
 };
+
+export const sendStatusUpdateToApplicant = async ({
+  applicantEmail,
+  applicantFirstName,
+  petName,
+  shelterName,
+  status,
+  applicationId,
+}) => {
+  const statusConfig = {
+    approved: {
+      subject: `✅ Your adoption application for ${petName} has been approved!`,
+      heading: "🎉 Application Approved!",
+      message: `Great news! Your adoption application for <strong>${petName}</strong> has been approved by <strong>${shelterName}</strong>.`,
+      statusLabel: "Approved",
+      color: "#22c55e",
+    },
+    home_visit: {
+      subject: `🏠 Home visit scheduled for your ${petName} application`,
+      heading: "🏠 Home Visit Scheduled!",
+      message: `The shelter <strong>${shelterName}</strong> would like to schedule a home visit for your <strong>${petName}</strong> application.`,
+      statusLabel: "Home Visit",
+      color: "#8b5cf6",
+    },
+    completed: {
+      subject: `🎊 Adoption complete — Welcome to your new family member, ${petName}!`,
+      heading: "🎊 Adoption Complete!",
+      message: `Congratulations! Your adoption of <strong>${petName}</strong> from <strong>${shelterName}</strong> is now complete. Welcome to your new family member!`,
+      statusLabel: "Completed",
+      color: "#4A90D9",
+    },
+    rejected: {
+      subject: `Update on your adoption application for ${petName}`,
+      heading: "Application Update",
+      message: `We regret to inform you that your adoption application for <strong>${petName}</strong> was not approved by <strong>${shelterName}</strong> at this time.`,
+      statusLabel: "Not Approved",
+      color: "#ef4444",
+    },
+  };
+
+  const config = statusConfig[status];
+  if (!config) return; // don't send for "pending"
+
+  // ✅ Use createTransporter like the rest of your mailer functions
+  const transport = await createTransporter();
+
+  const info = await transport.sendMail({
+    from: `"PetConnect" <${process.env.EMAIL_USER || "no-reply@petconnect.com"}>`,
+    to: applicantEmail,
+    subject: config.subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        
+        <div style="background-color: ${config.color}; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">${config.heading}</h1>
+        </div>
+
+        <div style="padding: 24px;">
+          <p>Hi <strong>${applicantFirstName}</strong>,</p>
+          <p>${config.message}</p>
+
+          <div style="background-color: #f0f7ff; padding: 16px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Application ID:</strong> #${applicationId}</p>
+            <p style="margin: 8px 0 0;"><strong>Status:</strong> ${config.statusLabel}</p>
+          </div>
+
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${process.env.FRONTEND_URL}/my-applications"
+              style="background-color: #4A90D9; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-size: 16px; font-weight: bold;">
+              View My Applications
+            </a>
+          </div>
+
+          <p style="color: #888; font-size: 12px; text-align: center;">
+            This is an automated email from PetConnect.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+
+  const previewUrl = nodemailer.getTestMessageUrl(info);
+  if (previewUrl) console.log("Status update email preview:", previewUrl);
+};
