@@ -5,6 +5,7 @@ import {
 } from "../../utils/mailer.js";   // ← your existing mailer file
 
 const { User, Pet, Shelter, AdoptionApplication } = db;
+console.log('AdoptionApplication model:', AdoptionApplication);
 
 // GET /adoption/prefill
 const getAdopterPrefillData = async (req, res) => {
@@ -22,6 +23,8 @@ const getAdopterPrefillData = async (req, res) => {
 
 // POST /adoption/apply/:petId
 const submitAdoptionApplication = async (req, res) => {
+  console.log("🔥 BODY:", JSON.stringify(req.body));
+  console.log('🔥 submitAdoptionApplication called, body:', JSON.stringify(req.body));
   try {
     const userId = req.user.id;
     const { petId } = req.params;
@@ -50,9 +53,19 @@ const submitAdoptionApplication = async (req, res) => {
 
     const shelter = await Shelter.findByPk(shelterId);
     if (!shelter) return res.status(404).json({ message: 'Shelter not found' });
-
-    const existing = await AdoptionApplication.findOne({ where: { userId, petId } });
+    console.log('✅ shelter found, checking existing...');
+console.log('TYPE:', typeof AdoptionApplication, AdoptionApplication?.name);
+let existing;
+try {
+  existing = await AdoptionApplication.findOne({ where: { userId, petId } });
+  console.log('✅ findOne done:', existing);
+} catch (findErr) {
+  console.error('❌ findOne CRASHED:', findErr.message);
+  return res.status(500).json({ message: 'findOne failed', detail: findErr.message });
+}
+    console.log('✅ existing check done:', existing);
     if (existing) return res.status(409).json({ message: 'You have already applied for this pet' });
+    console.log('✅ creating application...');
 
     const user = await User.findByPk(userId, {
       attributes: ['first_name', 'last_name', 'phone', 'email', 'pet_experience_years'],
@@ -107,9 +120,10 @@ const submitAdoptionApplication = async (req, res) => {
       message: 'Adoption application submitted successfully',
       data: application,
     });
-  } catch (error) {
-    console.error('Error submitting adoption application:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+} catch (error) {
+    console.error('ERROR MESSAGE:', error.message);
+    console.error('ERROR STACK:', error.stack);
+    return res.status(500).json({ message: 'Internal server error', detail: error.message });
   }
 };
 
@@ -219,6 +233,8 @@ const updateApplicationStatus = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+
 
 export {
   getAdopterPrefillData,

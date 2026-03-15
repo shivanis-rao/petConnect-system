@@ -19,6 +19,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/shelters", shelterRoutes);
 app.use("/api/shelter/pets", petRoutes);
 app.get("/api/pets/browse", browsePets);
+app.use("/api/adoption", (req, res, next) => {
+  console.log("ADOPTION ROUTE HIT:", req.method, req.url);
+  next();
+});
 app.use("/api/adoption",adoptionRoutes);
 
 export default app;
