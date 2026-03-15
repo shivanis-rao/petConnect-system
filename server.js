@@ -1,10 +1,17 @@
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 dotenv.config();
 
-import app from "./src/app.js";
+import http from 'http';
+import app from './src/app.js';
+import { initSocket } from './src/socket.js';
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const httpServer = http.createServer(app);
+
+// Init Socket.io + Redis
+await initSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

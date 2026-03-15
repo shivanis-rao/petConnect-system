@@ -1,4 +1,5 @@
 import express from "express";
+
 import * as shelterController from "../controllers/shelter.controller.js";
 import upload from "../middlewares/upload.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
@@ -58,4 +59,23 @@ router.post(
   ]),
   shelterController.createNgoShelter,
 );
+
+
+
+router.post(
+  "/government_register",
+  authMiddleware,
+  upload.single("government_authorization"),
+  shelterController.createGovernmentDetails
+);
+
+router.post(
+  "/rescuer_register",
+  authMiddleware,
+  upload.none(),  // no file but parses FormData body
+  shelterController.createShelterRescuer
+);
+
+   
+
 export default router;

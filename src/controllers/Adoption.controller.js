@@ -6,6 +6,7 @@ import {
 } from "../../utils/mailer.js"; // ← your existing mailer file
 
 const { User, Pet, Shelter, AdoptionApplication } = db;
+console.log("AdoptionApplication model:", AdoptionApplication);
 
 // GET /adoption/prefill
 const getAdopterPrefillData = async (req, res) => {
@@ -31,6 +32,11 @@ const getAdopterPrefillData = async (req, res) => {
 
 // POST /adoption/apply/:petId
 const submitAdoptionApplication = async (req, res) => {
+  console.log("🔥 BODY:", JSON.stringify(req.body));
+  console.log(
+    "🔥 submitAdoptionApplication called, body:",
+    JSON.stringify(req.body),
+  );
   try {
     const userId = req.user.id;
     const { petId } = req.params;
@@ -159,8 +165,11 @@ const submitAdoptionApplication = async (req, res) => {
       data: application,
     });
   } catch (error) {
-    console.error("Error submitting adoption application:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("ERROR MESSAGE:", error.message);
+    console.error("ERROR STACK:", error.stack);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", detail: error.message });
   }
 };
 
