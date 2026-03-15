@@ -26,7 +26,7 @@ export default (sequelize, DataTypes) => {
         validate: {
           isInt: true,
         },
-        allowNull: false,
+        allowNull: true,
       },
 
       approved_by: DataTypes.INTEGER,
@@ -77,6 +77,19 @@ export default (sequelize, DataTypes) => {
       foreignKey: "shelter_id",
       as: "pets",
     });
+
+      Shelter.hasMany(models.ShelterFiles,{
+      foreignKey : "shelter_id",
+      as : "files",
+      }
+    );
+
+    Shelter.hasOne(models.Government, {
+      foreignKey : "shelter_id",
+      as : "government_details"
+    })
+  
+
     Shelter.hasMany(models.AdoptionApplication, { 
       foreignKey: 'shelterId', 
       as: 'adoptionApplications' 
