@@ -60,22 +60,18 @@ router.post(
   shelterController.createNgoShelter,
 );
 
-
-
 router.post(
   "/government_register",
   authMiddleware,
   upload.single("government_authorization"),
-  shelterController.createGovernmentDetails
+  shelterController.createGovernmentDetails,
 );
 
 router.post(
   "/rescuer_register",
   authMiddleware,
-  upload.none(),  // no file but parses FormData body
-  shelterController.createShelterRescuer
+  upload.none(), // no file but parses FormData body
+  shelterController.createShelterRescuer,
 );
-
-   
 
 export default router;
