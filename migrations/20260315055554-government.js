@@ -1,9 +1,9 @@
 "use strict";
 
 /** @type {import('sequelize-cli').Migration} */
-export default {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("shelter_government_details", {
+
+export async function up(queryInterface, Sequelize) {
+    await queryInterface.createTable('shelter_government_details', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -37,9 +37,8 @@ export default {
         defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
     });
-  },
+  }
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("shelter_government_details");
-  },
-};
+export async function down(queryInterface, Sequelize) {
+    await queryInterface.dropTable('shelter_government_details');
+  }
