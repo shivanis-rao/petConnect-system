@@ -105,10 +105,21 @@ export const createUser = async (req, res) => {
         .json({ success: false, message: "All fields are required" });
     }
 
+    const passwordRegex =
+      /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/;
+
     if (password !== confirmPassword) {
       return res
         .status(400)
         .json({ success: false, message: "Passwords do not match" });
+    }
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password must be at least 8 characters and include one uppercase letter, one number, and one special character (!@#$%^&*)",
+      });
     }
 
     // Check OTP was verified

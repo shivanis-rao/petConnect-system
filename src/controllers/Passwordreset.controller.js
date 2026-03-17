@@ -71,19 +71,28 @@ Body: { token, newPassword }
 */
 export const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { token, newPassword, confirmPassword } = req.body;
 
-    if (!token || !newPassword) {
+    if (!token || !newPassword || !confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "Token and new password are required",
+        message: "Token, new password  and confirm Password are required",
       });
     }
+    const passwordRegex =
+      /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/;
 
-    if (newPassword.length < 6) {
+    if (newPassword !== confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters",
+        message: "Passwords do not match",
+      });
+    }
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password must be at least 8 characters and include one uppercase letter, one number, and one special character (!@#$%^&*)",
       });
     }
 
