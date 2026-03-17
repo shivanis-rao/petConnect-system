@@ -1,6 +1,6 @@
 import db from "../../models/index.js";
 
-const { Pet, Shelter, Sequelize } = db;
+const { Pet, Shelter, AdoptionRequest,Sequelize } = db;
 const { Op } = Sequelize;
 
 /*
@@ -102,6 +102,7 @@ export const updatePet = async (req, res) => {
     await pet.update({
       ...req.body,
       updated_by: req.user.id,
+      adopted_at: req.body.status === 'Adopted' && !pet.adopted_at ? new Date() : pet.adopted_at,
     });
 
     return res.status(200).json({
@@ -275,3 +276,98 @@ export const browsePets = async (req, res) => {
     });
   }
 };
+export const getAnalytics = async (req, res) => {
+  try {
+    const shelterId = req.user.shelter.id
+
+    // Fetch all pets for this shelter
+    const pets = await Pet.findAll({
+      where: { shelter_id: shelterId, deleted_at: null },
+    })
+
+    const totalPets = pets.length
+    const available = pets.filter(p => p.status === 'Available').length
+    const adopted = pets.filter(p => p.status === 'Adopted').length
+    const reserved = pets.filter(p => p.status === 'Reserved').length
+    const onHold = pets.filter(p => p.status === 'OnHold').length
+    const adoptionRate = totalPets > 0 ? Math.round((adopted / totalPets) * 100) : 0
+
+    // Average days from listed_at to adopted_at
+    const adoptedPets = pets.filter(p => p.status === 'Adopted' && p.adopted_at && p.listed_at)
+    const avgDays = adoptedPets.length > 0
+      ? Math.round(
+          adoptedPets.reduce((sum, p) => {
+            const diff = new Date(p.adopted_at) - new Date(p.listed_at)
+            return sum + diff / (1000 * 60 * 60 * 24)
+          }, 0) / adoptedPets.length
+        )
+      : 0
+
+    // Top 5 most adopted breeds
+    const breedCount = {}
+    pets
+      .filter(p => p.status === 'Adopted' && p.breed)
+      .forEach(p => {
+        breedCount[p.breed] = (breedCount[p.breed] || 0) + 1
+      })
+    const topBreeds = Object.entries(breedCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([breed, count]) => ({ breed, count }))
+
+    // Adoption trend - last 6 months
+    const adoptionTrend = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date()
+      d.setMonth(d.getMonth() - i)
+      const label = d.toLocaleString('default', { month: 'short' })
+      const year = d.getFullYear()
+      const month = d.getMonth()
+      const count = pets.filter(p => {
+        if (!p.adopted_at) return false
+        const a = new Date(p.adopted_at)
+        return a.getMonth() === month && a.getFullYear() === year
+      }).length
+      adoptionTrend.push({ month: label, adoptions: count })
+    }
+
+    // Adoption request status counts from adoption_requests table
+    const requests = await AdoptionRequest.findAll({
+      where: { shelter_id: shelterId },
+    })
+    const totalRequests = requests.length
+    const pending = requests.filter(r => r.status === 'Pending').length
+    const approved = requests.filter(r => r.status === 'Approved').length
+    const rejected = requests.filter(r => r.status === 'Rejected').length
+    const homeVisit = requests.filter(r => r.status === 'HomeVisit').length
+    const interviewing = requests.filter(r => r.status === 'Interviewing').length
+
+    return res.status(200).json({
+      data: {
+        totalPets,
+        available,
+        adopted,
+        reserved,
+        onHold,
+        adoptionRate,
+        avgDays,
+        topBreeds,
+        adoptionTrend,
+        requests: {
+          total: totalRequests,
+          pending,
+          approved,
+          rejected,
+          homeVisit,
+          interviewing,
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Analytics error:', error)
+    return res.status(500).json({
+      error: 'Failed to fetch analytics',
+      details: error.message,
+    })
+  }
+}
