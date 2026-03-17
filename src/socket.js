@@ -20,12 +20,24 @@ export const initSocket = async (httpServer) => {
   await sub.connect();
   console.log("Redis connected");
 
+  // ✅ RESOLVED: Keep Cloudflare fixes + correct CORS
   const io = new Server(httpServer, {
     cors: {
-      origin: "http://localhost:5173",
-      methods: ["GET", "POST"],
+      origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        process.env.CLIENT_URL,
+        'https://portfolio-dinner-skills-asks.trycloudflare.com',
+      ],
+      methods: ['GET', 'POST'],
       credentials: true,
     },
+    // ✅ FIX FOR CLOUDFLARE: Keep connections alive
+    transports: ['websocket', 'polling'],
+    pingInterval: 25000,
+    pingTimeout: 60000,
+    upgradeTimeout: 10000,
+    allowUpgrades: true,
   });
 
   // Auth middleware — verify JWT on socket connection
@@ -54,7 +66,8 @@ export const initSocket = async (httpServer) => {
     socket.join(`user_${socket.user.id}`);
 
     // Join conversation room
-    socket.on("join_conversation", async (conversationId) => {
+    socket.on('join_conversation', async (data) => {
+      const conversationId = typeof data === 'object' ? data.conversation_id : parseInt(data);
       const conversation = await Conversation.findByPk(conversationId);
       if (!conversation) return;
 
@@ -89,9 +102,11 @@ export const initSocket = async (httpServer) => {
     });
 
     // Send message
-    socket.on("send_message", async (data) => {
+    socket.on('send_message', async (data) => {
+      console.log('send_message received:', data);
       try {
-        const { conversation_id, content, file_url, file_type } = data;
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        const { conversation_id, content, file_url, file_type } = parsed;
 
         const conversation = await Conversation.findByPk(conversation_id);
         if (!conversation) return;
@@ -132,6 +147,7 @@ export const initSocket = async (httpServer) => {
         const payload = {
           id: message.id,
           conversation_id,
+          sender_id: socket.user.id,
           content,
           file_url: file_url || null,
           file_type: file_type || null,
@@ -143,8 +159,8 @@ export const initSocket = async (httpServer) => {
         // Publish to Redis
         await pub.publish("messages", JSON.stringify(payload));
 
-        // Broadcast to conversation room
-        io.to(`conversation_${conversation_id}`).emit("new_message", payload);
+        // Broadcast to all in conversation room (including sender)
+        io.to(`conversation_${conversation_id}`).emit('new_message', payload);
       } catch (err) {
         console.error("send_message error:", err);
         socket.emit("error", { message: "Failed to send message" });

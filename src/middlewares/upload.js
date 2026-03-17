@@ -37,4 +37,31 @@ const upload = multer({
   },
 });
 
+const petStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    // temp folder until pet is created and we have a real pet id
+    if (!req.petUploadFolder) {
+      req.petUploadFolder = `pets/temp_${Date.now()}`;
+    }
+    return {
+      folder: req.petUploadFolder,
+      public_id: `${Date.now()}_${file.fieldname}`,
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+      resource_type: "image",
+    };
+  },
+});
+
+export const petUpload = multer({
+  storage: petStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per image
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    allowed.includes(file.mimetype)
+      ? cb(null, true)
+      : cb(new Error("Only JPEG, PNG, and WEBP images are allowed"));
+  },
+});
+
 export default upload;

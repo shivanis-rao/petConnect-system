@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 
 const db = {};
 
+
 const required = ["DB_USERNAME", "DB_PASSWORD", "DB_NAME", "DB_HOST"];
 for (const key of required) {
   if (!process.env[key]) {
@@ -25,25 +26,28 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || "5432"),
+    port: parseInt(process.env.DB_PORT || "5432"), 
     dialect: process.env.DB_DIALECT || "postgres",
 
-    // logging: (msg) => console.log(" SQL:", msg), //  See every query — remove in production
+   // logging: (msg) => console.log(" SQL:", msg), //  See every query — remove in production
 
+    
     pool: {
-      max: 10, // max connections in pool
-      min: 0, // min connections in pool
+      max: 10,        // max connections in pool
+      min: 0,         // min connections in pool
       acquire: 30000, // max ms to wait for connection before throwing error
-      idle: 10000, // ms before idle connection is released
+      idle: 10000,    // ms before idle connection is released
     },
 
     dialectOptions: {
+      
       statement_timeout: 10000,
-
+      
       lock_timeout: 5000,
     },
-  },
+  }
 );
+
 
 const modelFiles = fs
   .readdirSync(__dirname)
@@ -62,6 +66,7 @@ for (const file of modelFiles) {
   db[model.name] = model;
 }
 
+
 for (const modelName of Object.keys(db)) {
   if (db[modelName].associate) {
     db[modelName].associate(db);
@@ -72,3 +77,4 @@ db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
 export default db;
+

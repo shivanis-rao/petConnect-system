@@ -1,12 +1,46 @@
+import { v2 as cloudinary } from "cloudinary";
 import db from "../../models/index.js";
 
-const { Pet, Shelter, Sequelize } = db;
+
+const { Pet, PetImage,Shelter, Sequelize } = db;
 const { Op } = Sequelize;
+
+// ADD THIS at the top of pet.controller.js after imports
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET_KEY,
+});
 
 /*
 CREATE PET
 POST /api/shelter/pets
 */
+
+// REPLACE your existing moveFile and saveImages with this
+
+const imageInclude = {
+  model: PetImage,
+  as: "images",
+  attributes: ["id", "file_url", "public_id", "display_order"],
+};
+
+// REPLACE moveFile and saveImages with this simpler version
+
+const saveImages = async (petId, files) => {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+
+    // file.path = full Cloudinary URL already — just save it directly
+    // file.filename = public_id including folder
+    await PetImage.create({
+      pet_id: petId,
+      file_url: file.path,       // direct Cloudinary URL — no rename needed
+      public_id: file.filename,  // full public_id with folder
+      display_order: i,
+    });
+  }
+};
 export const createPet = async (req, res) => {
   try {
     if (req.user.role !== "shelter") {
@@ -19,12 +53,21 @@ export const createPet = async (req, res) => {
       shelter_id: req.user.shelter.id, // from logged-in user
       created_by: req.user.id,
     });
+    if (req.files?.length) {
+      await saveImages(pet.id, req.files);
+    }
+
+    // ADD THIS — re-fetch pet with images included
+    const petWithImages = await Pet.findByPk(pet.id, {
+      include: [imageInclude],
+    });
 
     return res.status(201).json({
       message: "Pet created successfully",
-      data: pet,
+      data: petWithImages,
     });
   } catch (error) {
+    console.error("Create Pet Error:", error); // ADD THIS
     return res.status(500).json({
       error: "Failed to create pet",
       details: error.message,
@@ -42,6 +85,7 @@ export const getAllPets = async (req, res) => {
         shelter_id: req.user.shelter.id, // or req.body.shelter_id
         deleted_at: null,
       },
+      include: [imageInclude],  
     });
 
     return res.status(200).json({
@@ -59,7 +103,9 @@ GET /api/shelter/pets/:id
 */
 export const getPetById = async (req, res) => {
   try {
-    const pet = await Pet.findByPk(req.params.id);
+    const pet = await Pet.findByPk(req.params.id, {
+      include: [imageInclude],          // ADD THIS
+    });
 
     if (!pet) {
       return res.status(404).json({
@@ -104,9 +150,20 @@ export const updatePet = async (req, res) => {
       updated_by: req.user.id,
     });
 
+    if (req.files?.length) {
+      const oldImages = await PetImage.findAll({ where: { pet_id: pet.id } });
+      for (const img of oldImages) {
+        await cloudinary.uploader.destroy(img.public_id, { resource_type: "image" });
+      }
+      await PetImage.destroy({ where: { pet_id: pet.id } });
+      await saveImages(pet.id, req.files);
+    }
+
+    const updated = await Pet.findByPk(pet.id, { include: [imageInclude] }); 
+
     return res.status(200).json({
       message: "Pet updated successfully",
-      data: pet,
+      data: updated,
     });
   } catch (error) {
     console.error("Update Pet Error:", error);
@@ -170,6 +227,12 @@ export const deletePet = async (req, res) => {
         .status(403)
         .json({ error: "Not authorized to modify this pet" });
     }
+
+    const images = await PetImage.findAll({ where: { pet_id: pet.id } });
+    for (const img of images) {
+      await cloudinary.uploader.destroy(img.public_id, { resource_type: "image" });
+    }
+    await PetImage.destroy({ where: { pet_id: pet.id } });
 
     await pet.update({ deleted_at: new Date() });
 
@@ -244,7 +307,7 @@ export const browsePets = async (req, res) => {
 
     if (sort === "oldest") {
       order = [["listed_at", "ASC"]];
-    }
+    }//gives the newest listed pets 
 
     const pets = await Pet.findAndCountAll({
       where,
@@ -256,6 +319,7 @@ export const browsePets = async (req, res) => {
           where: Object.keys(shelterFilter).length ? shelterFilter : undefined,
           required: Object.keys(shelterFilter).length ? true : false,
         },
+        imageInclude,
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),

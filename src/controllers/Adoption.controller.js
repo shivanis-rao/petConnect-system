@@ -299,35 +299,30 @@ const getApplicationsForShelter = async (req, res) => {
 };
 
 // PATCH /adoption/:applicationId/status
+// PATCH /adoption/:applicationId/status
 const updateApplicationStatus = async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { status } = req.body;
 
-    const validStatuses = [
-      "pending",
-      "approved",
-      "home_visit",
-      "completed",
-      "rejected",
-    ];
+    const validStatuses = ['pending', 'approved', 'home_visit', 'completed', 'rejected'];
     if (!validStatuses.includes(status))
-      return res.status(400).json({ message: "Invalid status value" });
+      return res.status(400).json({ message: 'Invalid status value' });
 
     const application = await AdoptionApplication.findByPk(applicationId, {
       include: [
-        { model: Pet, as: "pet", attributes: ["id", "name"] },
-        { model: Shelter, as: "shelter", attributes: ["id", "name"] },
+        { model: Pet, as: 'pet', attributes: ['id', 'name'] },
+        { model: Shelter, as: 'shelter', attributes: ['id', 'name'] },
       ],
     });
 
     if (!application)
-      return res.status(404).json({ message: "Application not found" });
+      return res.status(404).json({ message: 'Application not found' });
 
     application.status = status;
     await application.save();
 
-    // ── Send email notification to adopter ────────────────────────
+    // ── Send email notification to adopter (teammate's code) ──────
     try {
       await sendStatusUpdateToApplicant({
         applicantEmail: application.email,
@@ -338,16 +333,34 @@ const updateApplicationStatus = async (req, res) => {
         applicationId: application.id,
       });
     } catch (emailError) {
-      console.error("Status update email failed:", emailError.message);
+      console.error('Status update email failed:', emailError.message);
     }
+
+    // ── Reveal identity when approved (your code) ─────────────────
+    if (status === 'approved') {
+      const { Conversation } = db;
+      const conversation = await Conversation.findOne({
+        where: {
+          adopter_id: application.userId,
+          pet_id: application.petId,
+        },
+      });
+      if (conversation) {
+        await conversation.update({
+          is_anonymous: false,
+          status: 'Applied',
+        });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────
 
     return res.status(200).json({
       message: `Application status updated to '${status}'`,
       data: application,
     });
   } catch (error) {
-    console.error("Error updating application status:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error('Error updating application status:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -360,47 +373,34 @@ const getShelterApplicationById = async (req, res) => {
       include: [
         {
           model: Pet,
-          as: "pet",
+          as: 'pet',
           attributes: [
-            "id",
-            "name",
-            "species",
-            "breed",
-            "age",
-            "gender",
-            //"image_url",
-            "vaccinated",
-            "sterilized",
-            "health_status",
-            "temperament",
-            "adoption_fee",
-            "status",
-            "special_needs",
-            "good_with_kids",
+            'id', 'name', 'species', 'breed', 'age', 'gender',
+            'vaccinated', 'sterilized', 'health_status', 'temperament',
+            'adoption_fee', 'status', 'special_needs', 'good_with_kids',
           ],
         },
         {
           model: User,
-          as: "applicant",
-          attributes: ["id", "first_name", "last_name", "email", "phone"],
+          as: 'applicant',
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone'],
         },
       ],
     });
 
     if (!application)
-      return res.status(404).json({ message: "Application not found" });
+      return res.status(404).json({ message: 'Application not found' });
 
-    // ✅ Make sure this application belongs to this shelter
     if (String(application.shelterId) !== String(shelterId))
-      return res.status(403).json({ message: "Unauthorized" });
+      return res.status(403).json({ message: 'Unauthorized' });
 
     return res.status(200).json({
-      message: "Application fetched successfully",
+      message: 'Application fetched successfully',
       data: application,
     });
   } catch (error) {
-    console.error("Error fetching shelter application:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error('Error fetching shelter application:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
