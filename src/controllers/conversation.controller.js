@@ -1,4 +1,4 @@
-import db from '../../models/index.js';
+import db from "../../models/index.js";
 const { Conversation, Message, User, Pet, Shelter } = db;
 
 // POST /api/conversations — start or get existing conversation
@@ -8,7 +8,7 @@ export const getOrCreateConversation = async (req, res) => {
     const { pet_id } = req.body;
 
     const pet = await Pet.findByPk(pet_id);
-    if (!pet) return res.status(404).json({ message: 'Pet not found' });
+    if (!pet) return res.status(404).json({ message: "Pet not found" });
 
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
@@ -21,14 +21,14 @@ export const getOrCreateConversation = async (req, res) => {
         shelter_id: pet.shelter_id,
         pet_id,
         is_anonymous: true,
-        status: 'Inquiry',
+        status: "Inquiry",
       });
     }
 
     res.status(200).json({ data: conversation });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -36,48 +36,43 @@ export const getOrCreateConversation = async (req, res) => {
 export const getMyConversations = async (req, res) => {
   try {
     const user = req.user;
-    const where = user.role === 'shelter'
-    
-      ? { shelter_id: user.shelter?.id }
-      : { adopter_id: user.id };
-      console.log('user role:', user.role);
-    console.log('user.shelter:', user.shelter);
-     console.log('where:', where);
+    const where =
+      user.role === "shelter"
+        ? { shelter_id: user.shelter?.id }
+        : { adopter_id: user.id };
 
     const conversations = await Conversation.findAll({
       where,
-      
       include: [
         {
           model: Pet,
-          as: 'pet',
-          attributes: ['id', 'name', 'species', 'breed', 'photo_url'],
+          as: "pet",
+          attributes: ["id", "name", "species", "breed", "photo_url"],
         },
         {
           model: User,
-          as: 'adopter',
-          attributes: ['id', 'first_name', 'last_name', 'email'],
+          as: "adopter",
+          attributes: ["id", "first_name", "last_name", "email"],
         },
         {
           model: Message,
-          as: 'messages',
+          as: "messages",
           limit: 1,
-          order: [['created_at', 'DESC']],
-          attributes: ['id', 'content', 'file_url', 'created_at', 'is_read'],
+          order: [["created_at", "DESC"]],
+          attributes: ["id", "content", "file_url", "created_at", "is_read"],
         },
       ],
-      order: [['last_message_at', 'DESC']],
-      
+      order: [["last_message_at", "DESC"]],
     });
 
     // Hide adopter identity if anonymous (for shelter view)
     const formatted = conversations.map((conv) => {
       const c = conv.toJSON();
-      if (user.role === 'shelter' && c.is_anonymous) {
+      if (user.role === "shelter" && c.is_anonymous) {
         c.adopter = {
           id: null,
-          first_name: 'Anonymous',
-          last_name: '',
+          first_name: "Anonymous",
+          last_name: "",
           email: null,
         };
       }
@@ -87,7 +82,7 @@ export const getMyConversations = async (req, res) => {
     res.json({ data: formatted });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -98,13 +93,14 @@ export const getMessages = async (req, res) => {
     const user = req.user;
 
     const conversation = await Conversation.findByPk(id);
-    if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
 
     // Verify access
     const isAdopter = conversation.adopter_id === user.id;
-    const isShelter = user.role === 'shelter';
+    const isShelter = user.role === "shelter";
     if (!isAdopter && !isShelter) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: "Access denied" });
     }
 
     const messages = await Message.findAll({
@@ -112,18 +108,27 @@ export const getMessages = async (req, res) => {
       include: [
         {
           model: User,
-          as: 'sender',
-          attributes: ['id', 'first_name', 'last_name', 'role'],
+          as: "sender",
+          attributes: ["id", "first_name", "last_name", "role"],
         },
       ],
-      order: [['created_at', 'ASC']],
+      order: [["created_at", "ASC"]],
     });
 
     // Hide sender identity if anonymous
     const formatted = messages.map((msg) => {
       const m = msg.toJSON();
-      if (isShelter && conversation.is_anonymous && m.sender.role === 'adopter') {
-        m.sender = { id: null, first_name: 'Anonymous', last_name: '', role: 'adopter' };
+      if (
+        isShelter &&
+        conversation.is_anonymous &&
+        m.sender.role === "adopter"
+      ) {
+        m.sender = {
+          id: null,
+          first_name: "Anonymous",
+          last_name: "",
+          role: "adopter",
+        };
       }
       return m;
     });
@@ -137,18 +142,18 @@ export const getMessages = async (req, res) => {
           is_read: false,
           sender_id: { [db.Sequelize.Op.ne]: user.id },
         },
-      }
+      },
     );
 
     // Reset unread
     await conversation.update(
-      isAdopter ? { adopter_unread: 0 } : { shelter_unread: 0 }
+      isAdopter ? { adopter_unread: 0 } : { shelter_unread: 0 },
     );
 
     res.json({ data: formatted });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -157,36 +162,37 @@ export const revealIdentity = async (req, res) => {
   try {
     const { id } = req.params;
     const conversation = await Conversation.findByPk(id);
-    if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
 
     if (conversation.adopter_id !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: "Access denied" });
     }
 
     await conversation.update({
       is_anonymous: false,
-      status: 'Applied',
+      status: "Applied",
       adoption_request_id: req.body.adoption_request_id || null,
     });
 
-    res.json({ message: 'Identity revealed', data: conversation });
+    res.json({ message: "Identity revealed", data: conversation });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 // POST /api/conversations/:id/upload — upload image in chat
 export const uploadChatFile = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     res.json({
       file_url: req.file.path,
-      file_type: req.file.mimetype.startsWith('image') ? 'image' : 'file',
+      file_type: req.file.mimetype.startsWith("image") ? "image" : "file",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };

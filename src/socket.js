@@ -1,7 +1,7 @@
-import { Server } from 'socket.io';
-import { createClient } from 'redis';
-import jwt from 'jsonwebtoken';
-import db from '../models/index.js';
+import { Server } from "socket.io";
+import { createClient } from "redis";
+import jwt from "jsonwebtoken";
+import db from "../models/index.js";
 
 const { Message, Conversation, User } = db;
 
@@ -9,52 +9,57 @@ let pub, sub;
 
 export const initSocket = async (httpServer) => {
   // Redis clients
-  pub = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-  sub = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+  pub = createClient({
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+  });
+  sub = createClient({
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+  });
 
   await pub.connect();
   await sub.connect();
-  console.log('Redis connected');
+  console.log("Redis connected");
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      process.env.CLIENT_URL,
-      'https://portfolio-dinner-skills-asks.trycloudflare.com',
-    ],
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-  // ✅ FIX FOR CLOUDFLARE: Keep connections alive
-  transports: ['websocket', 'polling'],
-  pingInterval: 25000,
-  pingTimeout: 60000,
-  upgradeTimeout: 10000,
-  allowUpgrades: true,
-});
+  // ✅ RESOLVED: Keep Cloudflare fixes + correct CORS
+  const io = new Server(httpServer, {
+    cors: {
+      origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        process.env.CLIENT_URL,
+        'https://portfolio-dinner-skills-asks.trycloudflare.com',
+      ],
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+    // ✅ FIX FOR CLOUDFLARE: Keep connections alive
+    transports: ['websocket', 'polling'],
+    pingInterval: 25000,
+    pingTimeout: 60000,
+    upgradeTimeout: 10000,
+    allowUpgrades: true,
+  });
 
   // Auth middleware — verify JWT on socket connection
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.query.token;
-      if (!token) return next(new Error('No token'));
+      if (!token) return next(new Error("No token"));
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findByPk(decoded.id, {
-        attributes: ['id', 'first_name', 'last_name', 'email', 'role'],
+        attributes: ["id", "first_name", "last_name", "email", "role"],
       });
-      if (!user) return next(new Error('User not found'));
+      if (!user) return next(new Error("User not found"));
 
       socket.user = user;
       next();
     } catch (err) {
-      next(new Error('Invalid token'));
+      next(new Error("Invalid token"));
     }
   });
 
-  io.on('connection', (socket) => {
+  io.on("connection", (socket) => {
     console.log(`Socket connected: user ${socket.user.id}`);
 
     // Join personal room — for direct notifications
@@ -62,18 +67,20 @@ const io = new Server(httpServer, {
 
     // Join conversation room
     socket.on('join_conversation', async (data) => {
-       const conversationId = typeof data === 'object' ? data.conversation_id : parseInt(data);
-       const conversation = await Conversation.findByPk(conversationId);
+      const conversationId = typeof data === 'object' ? data.conversation_id : parseInt(data);
+      const conversation = await Conversation.findByPk(conversationId);
       if (!conversation) return;
 
       // Only allow adopter or shelter member to join
       const isAdopter = conversation.adopter_id === socket.user.id;
-      const isShelterMember = socket.user.role === 'shelter';
+      const isShelterMember = socket.user.role === "shelter";
 
       if (!isAdopter && !isShelterMember) return;
 
       socket.join(`conversation_${conversationId}`);
-      console.log(`User ${socket.user.id} joined conversation ${conversationId}`);
+      console.log(
+        `User ${socket.user.id} joined conversation ${conversationId}`,
+      );
 
       // Mark messages as read
       await Message.update(
@@ -84,22 +91,22 @@ const io = new Server(httpServer, {
             is_read: false,
             sender_id: { [db.Sequelize.Op.ne]: socket.user.id },
           },
-        }
+        },
       );
 
       // Reset unread count
       const isAdopterUser = conversation.adopter_id === socket.user.id;
       await conversation.update(
-        isAdopterUser ? { adopter_unread: 0 } : { shelter_unread: 0 }
+        isAdopterUser ? { adopter_unread: 0 } : { shelter_unread: 0 },
       );
     });
 
     // Send message
-  socket.on('send_message', async (data) => {
-  console.log('send_message received:', data);
-  try {
-    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-    const { conversation_id, content, file_url, file_type } = parsed;
+    socket.on('send_message', async (data) => {
+      console.log('send_message received:', data);
+      try {
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        const { conversation_id, content, file_url, file_type } = parsed;
 
         const conversation = await Conversation.findByPk(conversation_id);
         if (!conversation) return;
@@ -118,64 +125,65 @@ const io = new Server(httpServer, {
         const isAdopter = conversation.adopter_id === socket.user.id;
         await conversation.update({
           last_message_at: new Date(),
-          shelter_unread: isAdopter ? conversation.shelter_unread + 1 : conversation.shelter_unread,
-          adopter_unread: !isAdopter ? conversation.adopter_unread + 1 : conversation.adopter_unread,
+          shelter_unread: isAdopter
+            ? conversation.shelter_unread + 1
+            : conversation.shelter_unread,
+          adopter_unread: !isAdopter
+            ? conversation.adopter_unread + 1
+            : conversation.adopter_unread,
         });
 
         // Build message payload
         const isAnonymous = conversation.is_anonymous;
-        const senderInfo = isAnonymous && isAdopter
-          ? { id: null, name: 'Anonymous', role: 'adopter' }
-          : {
-              id: socket.user.id,
-              name: `${socket.user.first_name} ${socket.user.last_name}`,
-              role: socket.user.role,
-            };
+        const senderInfo =
+          isAnonymous && isAdopter
+            ? { id: null, name: "Anonymous", role: "adopter" }
+            : {
+                id: socket.user.id,
+                name: `${socket.user.first_name} ${socket.user.last_name}`,
+                role: socket.user.role,
+              };
 
         const payload = {
-        id: message.id,
-        conversation_id,
-        sender_id: socket.user.id,
-        content,
-        file_url: file_url || null,
-        file_type: file_type || null,
-        sender: senderInfo,
-        is_read: false,
-        createdAt: message.createdAt,
-    };
+          id: message.id,
+          conversation_id,
+          sender_id: socket.user.id,
+          content,
+          file_url: file_url || null,
+          file_type: file_type || null,
+          sender: senderInfo,
+          is_read: false,
+          createdAt: message.createdAt,
+        };
 
         // Publish to Redis
-        await pub.publish('messages', JSON.stringify(payload));
+        await pub.publish("messages", JSON.stringify(payload));
 
-       // Send to others in room (not sender)
-     socket.to(`conversation_${conversation_id}`).emit('new_message', payload);
-
-      // Send back to sender only once
-      socket.emit('new_message', payload);
-
+        // Broadcast to all in conversation room (including sender)
+        io.to(`conversation_${conversation_id}`).emit('new_message', payload);
       } catch (err) {
-        console.error('send_message error:', err);
-        socket.emit('error', { message: 'Failed to send message' });
+        console.error("send_message error:", err);
+        socket.emit("error", { message: "Failed to send message" });
       }
     });
 
     // Typing indicator
-    socket.on('typing', (data) => {
-      socket.to(`conversation_${data.conversation_id}`).emit('user_typing', {
+    socket.on("typing", (data) => {
+      socket.to(`conversation_${data.conversation_id}`).emit("user_typing", {
         user_id: socket.user.id,
         is_typing: data.is_typing,
       });
     });
 
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       console.log(`Socket disconnected: user ${socket.user.id}`);
     });
   });
 
   // Subscribe to Redis messages channel
-  await sub.subscribe('messages', (messageStr) => {
+  await sub.subscribe("messages", (messageStr) => {
     const message = JSON.parse(messageStr);
-    console.log('Redis message received:', message.id);
+    console.log("Redis message received:", message.id);
   });
 
   return io;

@@ -7,7 +7,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET_KEY,
 });
 
-const { Shelter,ShelterRescuerDetails, Government, ShelterNgoDetails, ShelterFiles } = db;
+const {
+  Shelter,
+  ShelterRescuerDetails,
+  Government,
+  ShelterNgoDetails,
+  ShelterFiles,
+} = db;
 
 /*
  GET /api/shelters/:id
@@ -158,34 +164,25 @@ export const createNgoShelter = async (req, res) => {
   }
 };
 
-
-
 // -------------------- Government Details --------------------
 
 export const createGovernmentDetails = async (req, res) => {
-
-  
   try {
-
     console.log("Government API hit");
 
-    //const shelter_id = req.params.id;
-
     const {
-      
       name,
       type,
       department_name,
       municipality,
       office,
       government_id_number,
-      //street_address,
       city,
       state,
       zipcode,
       country,
       contact_email,
-      contact_phone
+      contact_phone,
     } = req.body;
 
     if (
@@ -205,27 +202,42 @@ export const createGovernmentDetails = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    if(!req.file){
-      return res.status(400).json({message:"Government Authorization certificate is required"})
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ message: "Government Authorization certificate is required" });
     }
 
- const existingShelter = await Shelter.findOne({ where: { owner_id: req.user.id } });
-if (existingShelter) {
-  return res.status(409).json({ message: 'You already have a shelter registered' });
-}
-const shelter = await Shelter.create({
-  name, type, city, state, country, zipcode, contact_email, contact_phone,
-  owner_id: req.user.id,
-});
+    // Check if user already has a shelter
+    const existingShelter = await Shelter.findOne({
+      where: { owner_id: req.user.id },
+    });
+
+    if (existingShelter) {
+      return res.status(409).json({
+        message: "You already have a shelter registered",
+      });
+    }
+
+    const shelter = await Shelter.create({
+      name,
+      type,
+      city,
+      state,
+      country,
+      zipcode,
+      contact_email,
+      contact_phone,
+      owner_id: req.user.id,
+    });
 
     const governmentDetails = await Government.create({
-      shelter_id:shelter.id,
+      shelter_id: shelter.id,
       department_name,
       municipality,
       office,
-      government_id_number
+      government_id_number,
     });
-
 
     const moveFile = async (oldPublicId, resourceType = "image") => {
       const newPublicId = oldPublicId.replace(
@@ -250,104 +262,100 @@ const shelter = await Shelter.create({
     fileRecords.push(
       await ShelterFiles.create({
         shelter_id: shelter.id,
-        file_url: certFile.path.replace(certFile.filename,newCertPublicId),
+        file_url: certFile.path.replace(certFile.filename, newCertPublicId),
         public_id: newCertPublicId,
         file_type: "government_authorization",
-        
-      })
+      }),
     );
 
-    
-
-   
     res.status(201).json({
       message: "Government details saved successfully",
-      data: governmentDetails
+      data: governmentDetails,
     });
-
   } catch (error) {
-    
-
     console.error(error);
 
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };
 
-
-
 // -------------------- Rescuer Details --------------------
 
 export const createShelterRescuer = async (req, res) => {
-
   try {
-
     console.log("Rescuer API hit");
-
-    //const shelter_id = req.params.id;
 
     const {
       name,
       type,
       contact_email,
       contact_phone,
-      // street_address,
       city,
       state,
       zipcode,
       country,
       id_type,
       id_number,
-      rescue_story
+      rescue_story,
     } = req.body;
 
     if (
       !name ||
       !type ||
       !contact_email ||
-      !contact_phone||
-      !id_type||
+      !contact_phone ||
+      !id_type ||
       !id_number ||
       !state ||
       !country ||
       !zipcode ||
       !rescue_story ||
-      
       !city
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
-  const existingShelter = await Shelter.findOne({ where: { owner_id: req.user.id } });
-if (existingShelter) {
-  return res.status(409).json({ message: 'You already have a shelter registered' });
-}
-const shelter = await Shelter.create({
-  name, type, city, state, country, zipcode, contact_email, contact_phone,
-  owner_id: req.user.id,
-});
+
+    // Check if user already has a shelter
+    const existingShelter = await Shelter.findOne({
+      where: { owner_id: req.user.id },
+    });
+
+    if (existingShelter) {
+      return res.status(409).json({
+        message: "You already have a shelter registered",
+      });
+    }
+
+    const shelter = await Shelter.create({
+      name,
+      type,
+      city,
+      state,
+      country,
+      zipcode,
+      contact_email,
+      contact_phone,
+      owner_id: req.user.id,
+    });
 
     const rescuerDetails = await ShelterRescuerDetails.create({
-      shelter_id:shelter.id,
+      shelter_id: shelter.id,
       id_type,
       id_number,
-      rescue_story
+      rescue_story,
     });
 
-   
-   
     res.status(201).json({
       message: "Rescuer details saved successfully",
-      data: rescuerDetails
+      data: rescuerDetails,
     });
-
   } catch (error) {
- 
     console.error(error);
 
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };

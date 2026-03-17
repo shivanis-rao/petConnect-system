@@ -24,6 +24,10 @@ export default (sequelize, DataTypes) => {
         foreignKey: "petId",
         as: "adoptionApplications",
       });
+      Pet.hasMany(models.PetImage, {
+      foreignKey: "pet_id",
+      as: "images",
+    });
     }
   }
 
