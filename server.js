@@ -1,9 +1,9 @@
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
-import http from 'http';
-import app from './src/app.js';
-import { initSocket } from './src/socket.js';
+import http from "http";
+import app from "./src/app.js";
+import { initSocket } from "./src/socket.js";
 
 const PORT = process.env.PORT || 5000;
 

@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /** @type {import('sequelize-cli').Migration} */
 
@@ -8,34 +8,34 @@ export async function up(queryInterface, Sequelize) {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
-        allowNull: false
+        allowNull: false,
       },
       shelter_id: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: false,
       },
       department_name: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       municipality: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       office: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       government_id_number: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-      }
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+      },
     });
   }
 
