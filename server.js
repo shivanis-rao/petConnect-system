@@ -9,9 +9,18 @@ const PORT = process.env.PORT || 5000;
 
 const httpServer = http.createServer(app);
 
-// Init Socket.io + Redis
-await initSocket(httpServer);
+// ✅ FIX FOR CLOUDFLARE: Proper async initialization
+(async () => {
+  try {
+    await initSocket(httpServer);
+    console.log('✅ Socket.io initialized');
+  } catch (error) {
+    console.error('❌ Socket.io initialization failed:', error);
+    process.exit(1);
+  }
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📡 WebSocket ready for connections`);
+  });
+})();

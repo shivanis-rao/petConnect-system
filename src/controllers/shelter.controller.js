@@ -209,10 +209,14 @@ export const createGovernmentDetails = async (req, res) => {
       return res.status(400).json({message:"Government Authorization certificate is required"})
     }
 
-    const shelter=await Shelter.create({
-      
-      name,type,city,state,country,zipcode,contact_email,contact_phone
-    });
+ const existingShelter = await Shelter.findOne({ where: { owner_id: req.user.id } });
+if (existingShelter) {
+  return res.status(409).json({ message: 'You already have a shelter registered' });
+}
+const shelter = await Shelter.create({
+  name, type, city, state, country, zipcode, contact_email, contact_phone,
+  owner_id: req.user.id,
+});
 
     const governmentDetails = await Government.create({
       shelter_id:shelter.id,
@@ -315,9 +319,14 @@ export const createShelterRescuer = async (req, res) => {
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
-     const shelter=await Shelter.create({
-      name,type,city,state,country,zipcode,contact_email,contact_phone
-    });
+  const existingShelter = await Shelter.findOne({ where: { owner_id: req.user.id } });
+if (existingShelter) {
+  return res.status(409).json({ message: 'You already have a shelter registered' });
+}
+const shelter = await Shelter.create({
+  name, type, city, state, country, zipcode, contact_email, contact_phone,
+  owner_id: req.user.id,
+});
 
     const rescuerDetails = await ShelterRescuerDetails.create({
       shelter_id:shelter.id,

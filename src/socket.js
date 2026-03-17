@@ -16,13 +16,24 @@ export const initSocket = async (httpServer) => {
   await sub.connect();
   console.log('Redis connected');
 
-  const io = new Server(httpServer, {
-    cors: {
-      origin: 'http://localhost:5173',
-      methods: ['GET', 'POST'],
-      credentials: true,
-    },
-  });
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.CLIENT_URL,
+      'https://portfolio-dinner-skills-asks.trycloudflare.com',
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  // ✅ FIX FOR CLOUDFLARE: Keep connections alive
+  transports: ['websocket', 'polling'],
+  pingInterval: 25000,
+  pingTimeout: 60000,
+  upgradeTimeout: 10000,
+  allowUpgrades: true,
+});
 
   // Auth middleware — verify JWT on socket connection
   io.use(async (socket, next) => {

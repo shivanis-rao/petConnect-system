@@ -244,7 +244,7 @@ export const browsePets = async (req, res) => {
 
     if (sort === "oldest") {
       order = [["listed_at", "ASC"]];
-    }
+    }//gives the newest listed pets 
 
     const pets = await Pet.findAndCountAll({
       where,
