@@ -1,6 +1,7 @@
+
 import db from "../../models/index.js";
 
-const { Pet, Shelter, AdoptionRequest,Sequelize } = db;
+const { Pet, Shelter, AdoptionApplication,Sequelize } = db;
 const { Op } = Sequelize;
 
 /*
@@ -332,15 +333,14 @@ export const getAnalytics = async (req, res) => {
     }
 
     // Adoption request status counts from adoption_requests table
-    const requests = await AdoptionRequest.findAll({
-      where: { shelter_id: shelterId },
+    const applications= await AdoptionApplication.findAll({
+      where: { shelterId: shelterId },
     })
-    const totalRequests = requests.length
-    const pending = requests.filter(r => r.status === 'Pending').length
-    const approved = requests.filter(r => r.status === 'Approved').length
-    const rejected = requests.filter(r => r.status === 'Rejected').length
-    const homeVisit = requests.filter(r => r.status === 'HomeVisit').length
-    const interviewing = requests.filter(r => r.status === 'Interviewing').length
+    const totalRequests = applications.length
+    const pending = applications.filter(r => r.status === 'pending').length
+    const approved = applications.filter(r => r.status === 'approved').length
+    const rejected = applications.filter(r => r.status === 'rejected').length
+    const homeVisit = applications.filter(r => r.status === 'homeVisit').length
 
     return res.status(200).json({
       data: {
@@ -359,7 +359,6 @@ export const getAnalytics = async (req, res) => {
           approved,
           rejected,
           homeVisit,
-          interviewing,
         }
       }
     })
